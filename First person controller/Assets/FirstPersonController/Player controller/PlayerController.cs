@@ -20,20 +20,21 @@ public class PlayerController : MonoBehaviour
 
     //Player settings
     [Header("Player settings")]
+    public float lookSpeed = .2f;
+    public Vector2 maxLookAngle = new Vector2(-80, 80);
     public float walkSpeed = 5;
     public float sprintSpeed = 8;
-    public float moveSpeed = 5;
+    float moveSpeed = 5;
     public float acceleration = 10;
-    public float jumpHeight = 1;
-    public float lookSpeed;
-    public float gravity = -9.81f;
-    public Vector2 maxLookAngle = new Vector2(-85, 85);
     public float playerDrag = 1;
+    public float jumpHeight = 1;
 
     public Vector3 groundCheckOrigin;
     public float groundCheckDistance = .1f;
     public Vector3 groundAngleCheckOrigin;
     public LayerMask groundMask;
+    [Range(0,1)]public float gravityChangeSpeed = .1f;
+
     private float timeFell;
     [HideInInspector] public float timeSinceFall = 0;
     [HideInInspector] public bool isFalling;
@@ -45,8 +46,11 @@ public class PlayerController : MonoBehaviour
     Vector3 moveDirection;
     Vector2 mousePosition;
 
-    public GameObject temp;
+    //misc game variables
+    float upAngle = 0;
+    Quaternion targetRotation = Quaternion.identity;
 
+    //Called at begining of game
     private void Start() {
         rb = GetComponent<Rigidbody>();
         Cursor.lockState = CursorLockMode.Locked;
@@ -54,18 +58,6 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    Vector3 newJumpVelocity = new Vector2(0f, 0f);
-
-    //Rotates the players camera
-    public float upAngle = 0;
-    void RotatePlayer() {
-        
-        //Camera.main.transform.Rotate(Vector3.right, -mousePosition.y);
-
-        upAngle = Mathf.Clamp(mousePosition.y + upAngle, -80,80);
-        Camera.main.transform.localRotation = Quaternion.Euler(-upAngle, 0, 0);
-        transform.Rotate(Vector3.up, mousePosition.x);
-    }
 
     //Checks if the player is touching the ground
     bool IsGrounded() {
@@ -78,13 +70,10 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
     }
 
-    
-
     //Moves rhe player along the desired plane
     void MovePlayer() {
         rb.AddForce(moveDirection.normalized * moveSpeed * acceleration, ForceMode.Force);
     }
-
 
     //Limit movement speed
     public void LimitPlayerSpeed() {
@@ -104,8 +93,20 @@ public class PlayerController : MonoBehaviour
         //Physics.gravity = upVector * newGrvaityStrenght;
         //transform.eulerAngles = gravityDirection;
 
-        transform.rotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+        //transform.rotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+        //Physics.gravity = upVector * -9.81f;
+        Debug.Log("Gravity direction changed");
+        targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
         Physics.gravity = upVector * -9.81f;
+    }
+
+    //Rotates the players camera
+    void RotatePlayer() {
+        upAngle = Mathf.Clamp(mousePosition.y + upAngle, maxLookAngle.x, maxLookAngle.y);
+        Camera.main.transform.localRotation = Quaternion.Euler(-upAngle, 0, 0);
+        transform.Rotate(Vector3.up, mousePosition.x);
+
+        targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
     }
 
     private void Update() {
@@ -149,55 +150,30 @@ public class PlayerController : MonoBehaviour
             timeSinceFall = Time.time - timeFell;
         }
 
+        //Rotates the player camera
+        RotatePlayer();
+
         //Debug text 
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + IsGrounded();
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
         RaycastHit hit;
-
         if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), transform.forward, out  hit, .65f)) {
-            transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
             Physics.gravity = hit.normal * -9.81f;
-
+        
         }
-        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
-            transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
+            //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
             Physics.gravity = hit.normal * -9.81f;
         }
-        //Rotates the player camera
-        RotatePlayer();
+        
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed);
     }
 
     private void FixedUpdate() {
-
         MovePlayer();
-
-        //LimitPlayerSpeed();
-
-        //Vector3 newVelocity = new Vector2(0f, 0f);
-        //
-        //
-        //
-        //newVelocity += transform.forward * movement.y * acceleration;
-        //newVelocity += transform.right * movement.x * acceleration;
-        //if (!IsGrounded()) newJumpVelocity += transform.up * gravity * timeSinceFall;
-        //
-        ///////Limit movement speed
-        /////if (rb.velocity.magnitude >= walkSpeed) {
-        /////    rb.velocity = rb.velocity.normalized * walkSpeed;
-        /////}
-        /////
-        /////if (Input.GetKey(KeyCode.Space)) {
-        /////    newJumpVelocity = transform.up * 0;
-        /////    newJumpVelocity += transform.up * jumpHeight;
-        /////    Debug.Log("Jumped");
-        /////}
-        /////
-        ///////Adds final new velocity to the players rigidbody
-        /////rb.velocity = newVelocity + newJumpVelocity;
-
-        //Debuging displays
-        /////GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Raw velocity " + newVelocity.ToString();
-        /////GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Magnitude " + newVelocity.magnitude;
     }
 }
