@@ -2,10 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using TMPro;
+using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.Rendering.DebugUI;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -18,6 +21,8 @@ public class PlayerController : MonoBehaviour
     //Player settings
     [Header("Player settings")]
     public float walkSpeed = 5;
+    public float sprintSpeed = 8;
+    public float moveSpeed = 5;
     public float acceleration = 10;
     public float jumpHeight = 1;
     public float lookSpeed;
@@ -27,6 +32,7 @@ public class PlayerController : MonoBehaviour
 
     public Vector3 groundCheckOrigin;
     public float groundCheckDistance = .1f;
+    public Vector3 groundAngleCheckOrigin;
     public LayerMask groundMask;
     private float timeFell;
     [HideInInspector] public float timeSinceFall = 0;
@@ -50,17 +56,25 @@ public class PlayerController : MonoBehaviour
 
     Vector3 newJumpVelocity = new Vector2(0f, 0f);
 
-    // Update is called once per frame
-    
+    //Rotates the players camera
+    public float upAngle = 0;
+    void RotatePlayer() {
+        
+        //Camera.main.transform.Rotate(Vector3.right, -mousePosition.y);
 
-    bool IsGrounded() {
-        return Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
-
-
+        upAngle = Mathf.Clamp(mousePosition.y + upAngle, -80,80);
+        Camera.main.transform.localRotation = Quaternion.Euler(-upAngle, 0, 0);
+        transform.Rotate(Vector3.up, mousePosition.x);
     }
 
+    //Checks if the player is touching the ground
+    bool IsGrounded() {
+        return Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
+    }
+
+    //Makes the player jump
     void OnJump() {
-        rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+        //rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
         rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
     }
 
@@ -68,86 +82,59 @@ public class PlayerController : MonoBehaviour
 
     //Moves rhe player along the desired plane
     void MovePlayer() {
-        rb.AddForce(moveDirection.normalized * walkSpeed * acceleration, ForceMode.Force);
+        rb.AddForce(moveDirection.normalized * moveSpeed * acceleration, ForceMode.Force);
     }
 
 
-
+    //Limit movement speed
     public void LimitPlayerSpeed() {
-        //Limit movement speed
-        Vector3 flatVal;// = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-        flatVal = transform.InverseTransformDirection(rb.velocity);
+        Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
+        Vector3 horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
 
-        Vector3 horizontalSpeed = Vector2.ClampMagnitude(new Vector2(flatVal.x, flatVal.y), walkSpeed);
-        flatVal.x = horizontalSpeed.x;
-        flatVal.x = horizontalSpeed.y;
-
-        //flatVal.x = Mathf.Clamp(flatVal.x, -walkSpeed, walkSpeed);
-        //flatVal.z = Mathf.Clamp(flatVal.z, -walkSpeed, walkSpeed);
-
-        rb.velocity = transform.TransformDirection(flatVal);
-
-        //flatVal = Vector3.zero;
-
-        //if (rb.velocity.magnitude >= walkSpeed) {
-        //    //rb.velocity = Vector3.ClampMagnitude(rb.velocity, walkSpeed);
-        //    Vector3 limitedVal = flatVal.normalized * walkSpeed;
-        //    rb.velocity = new Vector3(limitedVal.x, rb.velocity.y, limitedVal.z);
-        //}
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Normalized val :  " + flatVal;
-
-
-        //if (flatVal.magnitude >= walkSpeed) {
-        //    Vector3 limitedVal = flatVal.normalized * walkSpeed;
-        //
-        //    rb.velocity = new Vector3(limitedVal.x, rb.velocity.y, limitedVal.z);
-        //}
-
-        //Vector3 xzVel = Vector3.Normalize( new Vector3(rb.velocity.x, 0, rb.velocity.z));
-        //Vector3 yVel = Vector3.Cross(new Vector3(0, rb.velocity.y, 0).normalized, Vector3.up);
-        //
-        //xzVel = Vector3.ClampMagnitude(xzVel, walkSpeed);
-        //yVel = Vector3.ClampMagnitude(yVel, 50);
-
-        //rb.velocity = xzVel;
-
-        //rb.velocity = Vector3.ClampMagnitude(rb.velocity, walkSpeed) - transform.up;
-        //rb.velocity = Vector3.ClampMagnitude(new Vector3(rb.velocity.x, rb.velocity.y, rb.velocity.z), walkSpeed) - transform.up;
-
-
+        if (horizontalVelocity.magnitude > moveSpeed) {
+            Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
+            rb.velocity = transform.TransformDirection(limitedVal.x, convertedVelocity.y, limitedVal.z);
+        }
     }
 
-    //Rotates the players camera
-    void RotatePlayer() {
-        transform.Rotate(Vector3.up, mousePosition.x);
-        Camera.main.transform.Rotate(Vector3.right, -mousePosition.y);
-    }
 
+    //Sets the direction of the gravity
     public void SetGravityDirection(Vector3 newGravityDirection, float newGrvaityStrenght, Vector3 upVector) {
-        gravityDirection = newGravityDirection;
-        Physics.gravity = upVector * newGrvaityStrenght;
-        transform.eulerAngles = gravityDirection;
+        //gravityDirection = newGravityDirection;
+        //Physics.gravity = upVector * newGrvaityStrenght;
+        //transform.eulerAngles = gravityDirection;
+
+        transform.rotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+        Physics.gravity = upVector * -9.81f;
     }
 
     private void Update() {
+        //RaycastHit hit;
+        //if (Physics.Raycast(transform.localPosition + groundAngleCheckOrigin, transform.forward, out hit, .65f)) {
+        //    SetGravityDirection(Quaternion.LookRotation(hit.normal).eulerAngles, -9.81f, hit.normal);
+        //    Debug.Log(hit.normal);
+        //    Debug.DrawLine(transform.localPosition + groundAngleCheckOrigin, hit.point);
+        //}
+
+        //Sets players movment speed 
+        moveSpeed = pi.actions.FindAction("Sprint").IsPressed() ? sprintSpeed : walkSpeed;
+
         //Gets axis inputs from the player
-        movement = pi.actions.FindAction("Move").ReadValue<Vector2>();
-        moveDirection = transform.forward * movement.y + transform.right * movement.x;
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed;
         mousePosition.y = Mathf.Clamp(mousePosition.y, maxLookAngle.x, maxLookAngle.y);
-
-        //Rotates the player camera
-        RotatePlayer();
+        movement = pi.actions.FindAction("Move").ReadValue<Vector2>();
+        moveDirection = transform.forward * movement.y + transform.right * movement.x;
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
             gameObject.transform.position += new Vector3(0, 110, 0);
         }
 
+        //Limits the players speed 
+        LimitPlayerSpeed();
 
-
-        //sets player drag depending on weather they are grounded or not
-        rb.drag = IsGrounded() ? playerDrag * (1 - movement.magnitude) : 0;
+        //Sets player drag depending on weather they are grounded or not
+        rb.drag = IsGrounded() ? playerDrag : 0;
 
         //Gets the time since player has fallen off of a ledge
         if (IsGrounded()) {
@@ -162,18 +149,28 @@ public class PlayerController : MonoBehaviour
             timeSinceFall = Time.time - timeFell;
         }
 
-
-
         //Debug text 
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + IsGrounded();
-        GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude;
+        GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), transform.forward, out  hit, .65f)) {
+            transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            Physics.gravity = hit.normal * -9.81f;
+
+        }
+        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
+            transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+            Physics.gravity = hit.normal * -9.81f;
+        }
+        //Rotates the player camera
+        RotatePlayer();
     }
 
     private void FixedUpdate() {
 
         MovePlayer();
-        LimitPlayerSpeed();
 
         //LimitPlayerSpeed();
 
