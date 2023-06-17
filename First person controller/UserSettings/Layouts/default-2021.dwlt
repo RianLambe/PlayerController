@@ -43,7 +43,7 @@ MonoBehaviour:
     width: 1920
     height: 997
   m_ShowMode: 4
-  m_Title: Console
+  m_Title: Inspector
   m_RootView: {fileID: 5}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -97,7 +97,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 221}
   m_MaxSize: {x: 4000, y: 4021}
   vertical: 0
-  controlID: 32
+  controlID: 138
 --- !u!114 &5
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -193,7 +193,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 200}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 124
+  controlID: 134
 --- !u!114 &9
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -218,7 +218,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 200}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 19
+  controlID: 123
 --- !u!114 &10
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -243,7 +243,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 20
+  controlID: 124
 --- !u!114 &11
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -308,7 +308,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 1
   m_Script: {fileID: 12006, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: ConsoleWindow
+  m_Name: InputActionEditorWindow
   m_EditorClassIdentifier: 
   m_Children: []
   m_Position:
@@ -317,16 +317,16 @@ MonoBehaviour:
     y: 606
     width: 1401
     height: 341
-  m_MinSize: {x: 101, y: 121}
+  m_MinSize: {x: 601, y: 321}
   m_MaxSize: {x: 4001, y: 4021}
-  m_ActualView: {fileID: 21}
+  m_ActualView: {fileID: 22}
   m_Panes:
   - {fileID: 20}
   - {fileID: 21}
   - {fileID: 22}
   - {fileID: 23}
-  m_Selected: 1
-  m_LastSelected: 2
+  m_Selected: 2
+  m_LastSelected: 0
 --- !u!114 &14
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -479,9 +479,9 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: 66770000
-      m_LastClickedID: 30566
-      m_ExpandedIDs: 32fbffffee76000066770000
+      m_SelectedIDs: 46770000
+      m_LastClickedID: 30534
+      m_ExpandedIDs: 30fbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -764,9 +764,9 @@ MonoBehaviour:
   m_PlayAudio: 0
   m_AudioPlay: 0
   m_Position:
-    m_Target: {x: -33.489323, y: 12.436554, z: -60.09954}
+    m_Target: {x: -53.263294, y: 1.1817627, z: -22.35615}
     speed: 2
-    m_Value: {x: -33.489323, y: 12.436554, z: -60.09954}
+    m_Value: {x: -53.263294, y: 1.1817627, z: -22.35615}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -813,9 +813,9 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.15951014, y: -0.75102407, z: 0.1964547, w: 0.61004347}
+    m_Target: {x: 0.05058418, y: -0.52022964, z: 0.030910613, w: 0.85210013}
     speed: 2
-    m_Value: {x: 0.15949194, y: -0.7509384, z: 0.19643229, w: 0.6099739}
+    m_Value: {x: 0.05057842, y: -0.5201704, z: 0.030907094, w: 0.85200316}
   m_Size:
     m_Target: 7.548761
     speed: 2
@@ -1649,13 +1649,13 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/FirstPersonController/Models
+    - Assets/FirstPersonController/Player controller
     m_Globs: []
     m_OriginalText: 
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/FirstPersonController/Models
+  - Assets/FirstPersonController/Player controller
   m_LastFoldersGridSize: -1
   m_LastProjectPath: C:\Users\rianl\Documents\GitHub\PlayerController\First person
     controller
@@ -1663,9 +1663,9 @@ MonoBehaviour:
     m_IsLocked: 0
   m_FolderTreeState:
     scrollPos: {x: 0, y: 58.333344}
-    m_SelectedIDs: 70870000
-    m_LastClickedID: 34672
-    m_ExpandedIDs: 00000000967900003887000000ca9a3bffffff7f
+    m_SelectedIDs: a47a0000
+    m_LastClickedID: 31396
+    m_ExpandedIDs: 0000000046780000707a000000ca9a3bffffff7f
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1693,7 +1693,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 0000000096790000
+    m_ExpandedIDs: 0000000046780000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1718,8 +1718,8 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 80770000
-    m_LastClickedInstanceID: 30592
+    m_SelectedInstanceIDs: 90140000
+    m_LastClickedInstanceID: 5264
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs: c6230000
     m_RenameOverlay:
@@ -1830,9 +1830,9 @@ MonoBehaviour:
     m_SearchString: 
   m_ActionsTreeState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: 11e7ce57
-    m_LastClickedID: 1473177361
-    m_ExpandedIDs: 30f9d497aa649aa5eed7d9b0b5f1e1bda19ee8ce3e533ad4af4fa8f0b6768d13a4548c389823753c94b8a64120c9d844e33431462eba8f61
+    m_SelectedIDs: c2af4b3c
+    m_LastClickedID: 1011593154
+    m_ExpandedIDs: 30f9d497aa649aa5eed7d9b0b5f1e1bda19ee8ce3e533ad4af4fa8f0b6768d13e072fc2395585225a4548c389823753c94b8a64120c9d844e33431462eba8f61
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1866,7 +1866,7 @@ MonoBehaviour:
         selectedIndex: -1
         scroll: {x: 0, y: 0}
       - itemId: 1275948795
-        selectedIndex: 0
+        selectedIndex: 1
         scroll: {x: 0, y: 0}
       - itemId: -1184024587
         selectedIndex: -1
@@ -1894,6 +1894,12 @@ MonoBehaviour:
         scroll: {x: 0, y: 0}
       - itemId: -1184013745
         selectedIndex: -1
+        scroll: {x: 0, y: 0}
+      - itemId: -432712825
+        selectedIndex: -1
+        scroll: {x: 0, y: 0}
+      - itemId: -2031660377
+        selectedIndex: 0
         scroll: {x: 0, y: 0}
     m_ManualPathEditMode: 0
   m_ActionAssetManager:
@@ -1946,47 +1952,43 @@ MonoBehaviour:
       \"processors\": \"\",\n                    \"groups\": \"\",\n                   
       \"action\": \"Move\",\n                    \"isComposite\": false,\n                   
       \"isPartOfComposite\": true\n                },\n                {\n                   
-      \"name\": \"Controller\",\n                    \"id\": \"92ed6c39-c71a-4080-8ea0-045e35281cb0\",\n                   
-      \"path\": \"2DVector\",\n                    \"interactions\": \"\",\n                   
+      \"name\": \"\",\n                    \"id\": \"81b86d2a-d282-4bd9-b0af-fbd8db12fec4\",\n                   
+      \"path\": \"<Gamepad>/leftStick\",\n                    \"interactions\": \"\",\n                   
       \"processors\": \"\",\n                    \"groups\": \"\",\n                   
-      \"action\": \"Move\",\n                    \"isComposite\": true,\n                   
+      \"action\": \"Move\",\n                    \"isComposite\": false,\n                   
       \"isPartOfComposite\": false\n                },\n                {\n                   
-      \"name\": \"up\",\n                    \"id\": \"dffbe156-6bf9-44f4-b4ae-745a18c3d7b8\",\n                   
-      \"path\": \"<Gamepad>/leftStick/up\",\n                    \"interactions\":
-      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
-      \"\",\n                    \"action\": \"Move\",\n                    \"isComposite\":
-      false,\n                    \"isPartOfComposite\": true\n                },\n               
-      {\n                    \"name\": \"down\",\n                    \"id\": \"bb69b502-9ed2-4bcc-a843-37f020d664df\",\n                   
-      \"path\": \"<Gamepad>/leftStick/down\",\n                    \"interactions\":
-      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
-      \"\",\n                    \"action\": \"Move\",\n                    \"isComposite\":
-      false,\n                    \"isPartOfComposite\": true\n                },\n               
-      {\n                    \"name\": \"left\",\n                    \"id\": \"6e6807f1-8516-4578-9625-5534a0c93288\",\n                   
-      \"path\": \"<Gamepad>/leftStick/left\",\n                    \"interactions\":
-      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
-      \"\",\n                    \"action\": \"Move\",\n                    \"isComposite\":
-      false,\n                    \"isPartOfComposite\": true\n                },\n               
-      {\n                    \"name\": \"right\",\n                    \"id\": \"4073df13-95c2-4185-a386-6abf102b1fd5\",\n                   
-      \"path\": \"<Gamepad>/leftStick/right\",\n                    \"interactions\":
-      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
-      \"\",\n                    \"action\": \"Move\",\n                    \"isComposite\":
-      false,\n                    \"isPartOfComposite\": true\n                },\n               
-      {\n                    \"name\": \"\",\n                    \"id\": \"64e420c6-928f-4d85-b5ce-f5c47491ef5e\",\n                   
+      \"name\": \"\",\n                    \"id\": \"64e420c6-928f-4d85-b5ce-f5c47491ef5e\",\n                   
       \"path\": \"<Mouse>/delta\",\n                    \"interactions\": \"\",\n                   
       \"processors\": \"ScaleVector2\",\n                    \"groups\": \"\",\n                   
       \"action\": \"Look\",\n                    \"isComposite\": false,\n                   
       \"isPartOfComposite\": false\n                },\n                {\n                   
-      \"name\": \"\",\n                    \"id\": \"8cdabc73-95d5-43d5-ad16-fc9420ac55c1\",\n                   
-      \"path\": \"<Keyboard>/space\",\n                    \"interactions\": \"\",\n                   
+      \"name\": \"\",\n                    \"id\": \"0a909957-1547-4d5c-a6fe-0b7f74dd8c04\",\n                   
+      \"path\": \"<Gamepad>/rightStick\",\n                    \"interactions\":
+      \"\",\n                    \"processors\": \"ScaleVector2(x=20,y=20)\",\n                   
+      \"groups\": \"\",\n                    \"action\": \"Look\",\n                   
+      \"isComposite\": false,\n                    \"isPartOfComposite\": false\n               
+      },\n                {\n                    \"name\": \"\",\n                   
+      \"id\": \"8cdabc73-95d5-43d5-ad16-fc9420ac55c1\",\n                    \"path\":
+      \"<Keyboard>/space\",\n                    \"interactions\": \"\",\n                   
       \"processors\": \"\",\n                    \"groups\": \"\",\n                   
       \"action\": \"Jump\",\n                    \"isComposite\": false,\n                   
       \"isPartOfComposite\": false\n                },\n                {\n                   
-      \"name\": \"\",\n                    \"id\": \"cdcdd0a1-42df-4957-abfa-5198c48f054b\",\n                   
+      \"name\": \"\",\n                    \"id\": \"ada36340-805d-48e9-aa70-c0a0d9a0f225\",\n                   
+      \"path\": \"<Gamepad>/buttonSouth\",\n                    \"interactions\":
+      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
+      \"\",\n                    \"action\": \"Jump\",\n                    \"isComposite\":
+      false,\n                    \"isPartOfComposite\": false\n                },\n               
+      {\n                    \"name\": \"\",\n                    \"id\": \"cdcdd0a1-42df-4957-abfa-5198c48f054b\",\n                   
       \"path\": \"<Keyboard>/ctrl\",\n                    \"interactions\": \"\",\n                   
       \"processors\": \"\",\n                    \"groups\": \"\",\n                   
       \"action\": \"Sprint\",\n                    \"isComposite\": false,\n                   
-      \"isPartOfComposite\": false\n                }\n            ]\n        }\n   
-      ],\n    \"controlSchemes\": []\n}"
+      \"isPartOfComposite\": false\n                },\n                {\n                   
+      \"name\": \"\",\n                    \"id\": \"6b763b23-3194-402e-be7c-64d6f3993c95\",\n                   
+      \"path\": \"<Gamepad>/leftStickPress\",\n                    \"interactions\":
+      \"\",\n                    \"processors\": \"\",\n                    \"groups\":
+      \"\",\n                    \"action\": \"Sprint\",\n                    \"isComposite\":
+      false,\n                    \"isPartOfComposite\": false\n                }\n           
+      ]\n        }\n    ],\n    \"controlSchemes\": []\n}"
     m_IsDirty: 0
   m_Toolbar:
     m_IsDirty: 0
@@ -2094,7 +2096,7 @@ MonoBehaviour:
     m_ControlHash: -371814159
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectInstanceID: -1
-  m_LastVerticalScrollValue: 648
+  m_LastVerticalScrollValue: 0
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:

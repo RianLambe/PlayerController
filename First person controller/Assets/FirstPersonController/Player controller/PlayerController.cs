@@ -34,11 +34,13 @@ public class PlayerController : MonoBehaviour
     public Vector3 groundAngleCheckOrigin;
     public LayerMask groundMask;
     [Range(0,1)]public float gravityChangeSpeed = .1f;
+    public Vector2 maxGravityChange;
 
     private float timeFell;
     [HideInInspector] public float timeSinceFall = 0;
     [HideInInspector] public bool isFalling;
     public Vector3 gravityDirection;
+    public Transform attractor;
     
     //Input variables
     PlayerInput pi;
@@ -80,15 +82,15 @@ public class PlayerController : MonoBehaviour
         Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
         Vector3 horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
 
-        if (horizontalVelocity.magnitude > moveSpeed) {
-            Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
+        if (horizontalVelocity.magnitude > (moveSpeed * moveDirection.magnitude)) {
+            Vector3 limitedVal = horizontalVelocity.normalized * (moveSpeed * moveDirection.magnitude);
             rb.velocity = transform.TransformDirection(limitedVal.x, convertedVelocity.y, limitedVal.z);
         }
     }
 
 
     //Sets the direction of the gravity
-    public void SetGravityDirection(Vector3 newGravityDirection, float newGrvaityStrenght, Vector3 upVector) {
+    public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector) {
         //gravityDirection = newGravityDirection;
         //Physics.gravity = upVector * newGrvaityStrenght;
         //transform.eulerAngles = gravityDirection;
@@ -126,6 +128,8 @@ public class PlayerController : MonoBehaviour
         movement = pi.actions.FindAction("Move").ReadValue<Vector2>();
         moveDirection = transform.forward * movement.y + transform.right * movement.x;
 
+        Debug.Log(moveDirection);
+
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
             gameObject.transform.position += new Vector3(0, 110, 0);
@@ -158,16 +162,25 @@ public class PlayerController : MonoBehaviour
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
         RaycastHit hit;
-        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), transform.forward, out  hit, .65f)) {
-            //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-            targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-            Physics.gravity = hit.normal * -9.81f;
-        
+        if (attractor != null) {
+            SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized);
+        }
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), transform.forward, out  hit, .65f)) {
+            if(Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
+                //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+                //targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+                //Physics.gravity = hit.normal * -9.81f;
+                SetGravityDirection(9.81f, hit.normal);
+            }   
         }
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
-            //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-            targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-            Physics.gravity = hit.normal * -9.81f;
+            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
+                //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+                //targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
+                //Physics.gravity = hit.normal * -9.81f;
+                SetGravityDirection(9.81f, hit.normal);
+
+            }
         }
         
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed);

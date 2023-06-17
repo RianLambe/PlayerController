@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 2159.8086, g: 2265.7344, b: 3294.4922, a: 1}
+  m_IndirectSpecularColor: {r: 2161.6104, g: 2265.6094, b: 3288.7656, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1963,7 +1963,7 @@ MonoBehaviour:
   maxLookAngle: {x: -85, y: 85}
   walkSpeed: 5
   sprintSpeed: 8
-  acceleration: 20
+  acceleration: 40
   playerDrag: 10
   jumpHeight: 5
   groundCheckOrigin: {x: 0, y: -1, z: 0}
@@ -1973,6 +1973,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   gravityChangeSpeed: 0.15
+  maxGravityChange: {x: 0, y: 90}
   timeSinceFall: 0
   isFalling: 0
   gravityDirection: {x: 0, y: 0, z: 0}

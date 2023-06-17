@@ -7,6 +7,6 @@ public class GravityZone : MonoBehaviour
     [SerializeField] float grvaityStrenght = 9.81f;
 
     private void OnTriggerEnter(Collider other) {
-        other.GetComponent<PlayerController>().SetGravityDirection(transform.eulerAngles, grvaityStrenght, transform.up);
+        other.GetComponent<PlayerController>().SetGravityDirection(grvaityStrenght, transform.up);
     }
 }
