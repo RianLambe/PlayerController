@@ -1,3 +1,4 @@
+using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,6 +23,8 @@ public class PlayerController : MonoBehaviour
     [Header("Player settings")]
     public float lookSpeed = .2f;
     public Vector2 maxLookAngle = new Vector2(-80, 80);
+    public Vector3 cameraOffset;
+
     public float walkSpeed = 5;
     public float sprintSpeed = 8;
     float moveSpeed = 5;
@@ -51,6 +54,14 @@ public class PlayerController : MonoBehaviour
     //misc game variables
     float upAngle = 0;
     Quaternion targetRotation = Quaternion.identity;
+    CinemachineVirtualCamera cam;
+    Vector3 currentDirection;
+
+    public GameObject test;
+
+    private void Awake() {
+        cam = GetComponentInChildren<CinemachineVirtualCamera>();
+    }
 
     //Called at begining of game
     private void Start() {
@@ -82,8 +93,8 @@ public class PlayerController : MonoBehaviour
         Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
         Vector3 horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
 
-        if (horizontalVelocity.magnitude > (moveSpeed * moveDirection.magnitude)) {
-            Vector3 limitedVal = horizontalVelocity.normalized * (moveSpeed * moveDirection.magnitude);
+        if (horizontalVelocity.magnitude > moveSpeed) {
+            Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
             rb.velocity = transform.TransformDirection(limitedVal.x, convertedVelocity.y, limitedVal.z);
         }
     }
@@ -105,7 +116,7 @@ public class PlayerController : MonoBehaviour
     //Rotates the players camera
     void RotatePlayer() {
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, maxLookAngle.x, maxLookAngle.y);
-        Camera.main.transform.localRotation = Quaternion.Euler(-upAngle, 0, 0);
+        cam.transform.localRotation = Quaternion.Euler(-upAngle, 0, 0);
         transform.Rotate(Vector3.up, mousePosition.x);
 
         targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
@@ -127,8 +138,6 @@ public class PlayerController : MonoBehaviour
         mousePosition.y = Mathf.Clamp(mousePosition.y, maxLookAngle.x, maxLookAngle.y);
         movement = pi.actions.FindAction("Move").ReadValue<Vector2>();
         moveDirection = transform.forward * movement.y + transform.right * movement.x;
-
-        Debug.Log(moveDirection);
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
@@ -161,16 +170,24 @@ public class PlayerController : MonoBehaviour
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + IsGrounded();
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
+;
+
+        currentDirection = moveDirection - transform.up;
+
         RaycastHit hit;
         if (attractor != null) {
             SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized);
         }
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), transform.forward, out  hit, .65f)) {
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), currentDirection, out  hit, 2f)) {
             if(Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
                 //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
                 //targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
                 //Physics.gravity = hit.normal * -9.81f;
+                currentDirection = hit.normal.normalized;
+                Debug.Log(hit.transform.name);
                 SetGravityDirection(9.81f, hit.normal);
+                test.transform.position = hit.point;
+
             }   
         }
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
@@ -188,5 +205,9 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate() {
         MovePlayer();
+    }
+
+    private void OnValidate() {
+
     }
 }
