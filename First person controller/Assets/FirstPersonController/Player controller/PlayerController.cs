@@ -3,10 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using TMPro;
-using UnityEditor.ShaderGraph;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEngine.Rendering.DebugUI;
@@ -31,7 +28,9 @@ public class PlayerController : MonoBehaviour
     float moveSpeed = 5;
     public float acceleration = 10;
     public float playerDrag = 1;
+
     public float jumpHeight = 1;
+    public int maxJumps = 1;
 
     public Vector3 groundCheckOrigin;
     public float groundCheckDistance = .1f;
@@ -40,6 +39,7 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundMask;
     [Range(0,10)]public float gravityChangeSpeed = .1f;
     public Vector2 maxGravityChange;
+    private float angleTolerance = 0.001f;
 
     private float timeFell;
     [HideInInspector] public float timeSinceFall = 0;
@@ -58,6 +58,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField]Quaternion targetRotation = Quaternion.identity;
     CinemachineVirtualCamera cam;
     Vector3 currentDirection;
+    int numberOfJumps;
 
     Vector3 f;
     Vector3 gravityCache;
@@ -86,7 +87,11 @@ public class PlayerController : MonoBehaviour
     //Makes the player jump
     void OnJump() {
         //rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-        rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
+        if (numberOfJumps < maxJumps) {
+            rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
+            numberOfJumps ++;
+            Debug.Log(numberOfJumps);
+        }
     }
 
     //Moves rhe player along the desired plane
@@ -158,6 +163,7 @@ public class PlayerController : MonoBehaviour
         if (IsGrounded()) {
             timeSinceFall = 0;
             isFalling = false;
+            numberOfJumps = 0;
         }
         else {
             if (!isFalling) {
@@ -196,14 +202,17 @@ public class PlayerController : MonoBehaviour
             SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized, true);
         }
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), f, out hit, groundAngleCheckDistance)) {
-            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
+
+            //Debug.Log(Vector3.Angle(hit.normal, transform.up)); debug show angle
+
+            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + f * groundAngleCheckDistance, Color.cyan, 1f);
 
                 SetGravityDirection(9.81f, hit.normal, true);
             }
         }
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, groundAngleCheckDistance)) {
-            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
+            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 SetGravityDirection(9.81f, hit.normal, false);
             }
         }

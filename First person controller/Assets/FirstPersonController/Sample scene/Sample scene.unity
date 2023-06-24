@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 2159.8096, g: 2264.2012, b: 3287.6562, a: 1}
+  m_IndirectSpecularColor: {r: 2161.38, g: 2265.4004, b: 3288.5586, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1017,6 +1017,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1463628568}
   m_CullTransparentMesh: 1
+--- !u!1 &1661277676 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8f4ebfb5ca4d61d4ebae0d6d490eacee,
+    type: 3}
+  m_PrefabInstance: {fileID: 1842463887}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1661277678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1661277676}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e3bf12ea5fb0749bbb3987782b02c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grvaityStrenght: 9.81
 --- !u!1 &1706622306
 GameObject:
   m_ObjectHideFlags: 0
@@ -1183,7 +1202,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 85
+    FieldOfView: 90
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -1509,7 +1528,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 85
+  field of view: 90
   orthographic: 0
   orthographic size: 10
   m_Depth: 0
@@ -1535,7 +1554,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1912722168}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -54.747204, y: 6.7999997, z: -22.615791}
+  m_LocalPosition: {x: -46.95, y: 7.4, z: -24.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1890,30 +1909,21 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 85
+      value: 90
       inSlope: 0
       outSlope: 0
-      tangentMode: 0
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.33333334
     - serializedVersion: 3
-      time: 8
-      value: 100
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 50
-      value: 120
+      time: 1
+      value: 90
       inSlope: 0
       outSlope: 0
-      tangentMode: 0
+      tangentMode: 34
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.33333334
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -1923,6 +1933,7 @@ MonoBehaviour:
   acceleration: 40
   playerDrag: 10
   jumpHeight: 7
+  maxJumps: 1
   groundCheckOrigin: {x: 0, y: -1, z: 0}
   groundCheckDistance: 0.1
   groundAngleCheckOrigin: {x: 0, y: -0.8, z: 0}
@@ -1931,7 +1942,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   gravityChangeSpeed: 10
-  maxGravityChange: {x: 0, y: 100}
+  maxGravityChange: {x: 30, y: 91}
   timeSinceFall: 0
   isFalling: 0
   gravityDirection: {x: 0, y: 0, z: 0}
@@ -2026,7 +2037,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2143154702}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -54.747204, y: 6.2, z: -22.615791}
+  m_LocalPosition: {x: -46.95, y: 6.8, z: -24.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
