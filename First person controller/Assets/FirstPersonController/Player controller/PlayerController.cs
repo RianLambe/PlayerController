@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
     public float lookSpeed = .2f;
     public Vector2 maxLookAngle = new Vector2(-80, 80);
     public Vector3 cameraOffset;
+    public AnimationCurve cameraFOVCurve;
 
     public float walkSpeed = 5;
     public float sprintSpeed = 8;
@@ -35,8 +36,9 @@ public class PlayerController : MonoBehaviour
     public Vector3 groundCheckOrigin;
     public float groundCheckDistance = .1f;
     public Vector3 groundAngleCheckOrigin;
+    public float groundAngleCheckDistance = .7f;
     public LayerMask groundMask;
-    [Range(0,1)]public float gravityChangeSpeed = .1f;
+    [Range(0,10)]public float gravityChangeSpeed = .1f;
     public Vector2 maxGravityChange;
 
     private float timeFell;
@@ -47,15 +49,19 @@ public class PlayerController : MonoBehaviour
     
     //Input variables
     PlayerInput pi;
-    Vector2 movement;
+    Vector2 movementInput;
     Vector3 moveDirection;
     Vector2 mousePosition;
 
     //misc game variables
     float upAngle = 0;
-    Quaternion targetRotation = Quaternion.identity;
+    [SerializeField]Quaternion targetRotation = Quaternion.identity;
     CinemachineVirtualCamera cam;
     Vector3 currentDirection;
+
+    Vector3 f;
+    Vector3 gravityCache;
+    Vector2 inputCache;
 
     public GameObject test;
 
@@ -86,6 +92,8 @@ public class PlayerController : MonoBehaviour
     //Moves rhe player along the desired plane
     void MovePlayer() {
         rb.AddForce(moveDirection.normalized * moveSpeed * acceleration, ForceMode.Force);
+
+        cam.m_Lens.FieldOfView = cameraFOVCurve.Evaluate(rb.velocity.magnitude);
     }
 
     //Limit movement speed
@@ -93,22 +101,23 @@ public class PlayerController : MonoBehaviour
         Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
         Vector3 horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
 
+
+        Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
+
         if (horizontalVelocity.magnitude > moveSpeed) {
-            Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
             rb.velocity = transform.TransformDirection(limitedVal.x, convertedVelocity.y, limitedVal.z);
         }
+
+        if (rb.velocity != Vector3.zero) 
+        currentDirection = transform.TransformDirection(convertedVelocity.normalized.x, convertedVelocity.y, convertedVelocity.normalized.z).normalized;
+
+
+
     }
 
 
     //Sets the direction of the gravity
-    public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector) {
-        //gravityDirection = newGravityDirection;
-        //Physics.gravity = upVector * newGrvaityStrenght;
-        //transform.eulerAngles = gravityDirection;
-
-        //transform.rotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
-        //Physics.gravity = upVector * -9.81f;
-        Debug.Log("Gravity direction changed");
+    public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector, bool concerveMomentum) {
         targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
         Physics.gravity = upVector * -9.81f;
     }
@@ -122,22 +131,17 @@ public class PlayerController : MonoBehaviour
         targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
     }
 
-    private void Update() {
-        //RaycastHit hit;
-        //if (Physics.Raycast(transform.localPosition + groundAngleCheckOrigin, transform.forward, out hit, .65f)) {
-        //    SetGravityDirection(Quaternion.LookRotation(hit.normal).eulerAngles, -9.81f, hit.normal);
-        //    Debug.Log(hit.normal);
-        //    Debug.DrawLine(transform.localPosition + groundAngleCheckOrigin, hit.point);
-        //}
 
+
+    private void Update() {
         //Sets players movment speed 
         moveSpeed = pi.actions.FindAction("Sprint").IsPressed() ? sprintSpeed : walkSpeed;
 
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed;
         mousePosition.y = Mathf.Clamp(mousePosition.y, maxLookAngle.x, maxLookAngle.y);
-        movement = pi.actions.FindAction("Move").ReadValue<Vector2>();
-        moveDirection = transform.forward * movement.y + transform.right * movement.x;
+        movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>();
+        moveDirection = transform.forward * movementInput.y + transform.right * movementInput.x;
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
@@ -167,40 +171,52 @@ public class PlayerController : MonoBehaviour
         RotatePlayer();
 
         //Debug text 
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Movement " + moveDirection;
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Somehting " + (currentDirection + moveDirection.normalized);
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + IsGrounded();
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
-;
 
-        currentDirection = moveDirection - transform.up;
+        if (movementInput != Vector2.zero) {
+            inputCache = movementInput;
+        }
+
+        //if (movementInput != Vector2.zero) {
+        //    f = transform.forward * movementInput.y + transform.right * movementInput.x;
+        //}
+
+        f = transform.forward * inputCache.y + transform.right * inputCache.x;
+
+
+
+        Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + f * groundAngleCheckDistance, Color.red);
 
         RaycastHit hit;
         if (attractor != null) {
-            SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized);
+            SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized, true);
         }
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), currentDirection, out  hit, 2f)) {
-            if(Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
-                //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-                //targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-                //Physics.gravity = hit.normal * -9.81f;
-                currentDirection = hit.normal.normalized;
-                Debug.Log(hit.transform.name);
-                SetGravityDirection(9.81f, hit.normal);
-                test.transform.position = hit.point;
-
-            }   
-        }
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .65f)) {
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), f, out hit, groundAngleCheckDistance)) {
             if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
-                //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-                //targetRotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
-                //Physics.gravity = hit.normal * -9.81f;
-                SetGravityDirection(9.81f, hit.normal);
+                Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + f * groundAngleCheckDistance, Color.cyan, 1f);
 
+                SetGravityDirection(9.81f, hit.normal, true);
             }
         }
-        
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed);
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, groundAngleCheckDistance)) {
+            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y) {
+                SetGravityDirection(9.81f, hit.normal, false);
+            }
+        }
+
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
+    }
+
+    void OnTest1() {
+        gravityCache = transform.InverseTransformVector(rb.velocity);
+    }
+
+    void OnTest2() {
+        rb.velocity = transform.TransformVector(gravityCache);
     }
 
     private void FixedUpdate() {
