@@ -169,6 +169,7 @@ public class PlayerController : MonoBehaviour
             if (!isFalling) {
                 timeFell = Time.time;
                 isFalling = true;
+                numberOfJumps ++;
             }
             timeSinceFall = Time.time - timeFell;
         }
