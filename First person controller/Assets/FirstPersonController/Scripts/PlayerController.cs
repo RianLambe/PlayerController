@@ -15,23 +15,27 @@ public class PlayerController : MonoBehaviour
 {
     //Components
     Rigidbody rb;
+    Animator animator;
 
-    //Player settings
-    [Header("Player settings")]
+    //Camera settings
     public float lookSpeed = .2f;
     public Vector2 maxLookAngle = new Vector2(-80, 80);
     public Vector3 cameraOffset;
     public AnimationCurve cameraFOVCurve;
 
+    //Moving variables
     public float walkSpeed = 5;
     public float sprintSpeed = 8;
     float moveSpeed = 5;
     public float acceleration = 10;
     public float playerDrag = 1;
+    public AnimationCurve verticalInputMap;
 
+    //Junmping variables
     public float jumpHeight = 1;
     public int maxJumps = 1;
 
+    //Ground check variables
     public Vector3 groundCheckOrigin;
     public float groundCheckDistance = .1f;
     public Vector3 groundAngleCheckOrigin;
@@ -41,6 +45,7 @@ public class PlayerController : MonoBehaviour
     public Vector2 maxGravityChange;
     private float angleTolerance = 0.001f;
 
+    //Gravity variables
     private float timeFell;
     [HideInInspector] public float timeSinceFall = 0;
     [HideInInspector] public bool isFalling;
@@ -59,6 +64,7 @@ public class PlayerController : MonoBehaviour
     CinemachineVirtualCamera cam;
     Vector3 currentDirection;
     int numberOfJumps;
+    bool sprinting;
 
     Vector3 f;
     Vector3 gravityCache;
@@ -68,6 +74,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake() {
         cam = GetComponentInChildren<CinemachineVirtualCamera>();
+        animator = GetComponent<Animator>();
     }
 
     //Called at begining of game
@@ -91,13 +98,13 @@ public class PlayerController : MonoBehaviour
             rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
             numberOfJumps ++;
             Debug.Log(numberOfJumps);
+            animator.SetTrigger("jump");
         }
     }
 
     //Moves rhe player along the desired plane
     void MovePlayer() {
         rb.AddForce(moveDirection.normalized * moveSpeed * acceleration, ForceMode.Force);
-
         cam.m_Lens.FieldOfView = cameraFOVCurve.Evaluate(rb.velocity.magnitude);
     }
 
@@ -140,13 +147,16 @@ public class PlayerController : MonoBehaviour
 
     private void Update() {
         //Sets players movment speed 
-        moveSpeed = pi.actions.FindAction("Sprint").IsPressed() ? sprintSpeed : walkSpeed;
+        sprinting = pi.actions.FindAction("Sprint").IsPressed();
+        moveSpeed = sprinting ? sprintSpeed : walkSpeed;
+        animator.SetBool("sprinting", sprinting);
 
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed;
         mousePosition.y = Mathf.Clamp(mousePosition.y, maxLookAngle.x, maxLookAngle.y);
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>();
         moveDirection = transform.forward * movementInput.y + transform.right * movementInput.x;
+        animator.SetFloat("inputMagnitude", movementInput.magnitude);
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
@@ -179,7 +189,7 @@ public class PlayerController : MonoBehaviour
 
         //Debug text 
         GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Movement " + moveDirection;
-        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Somehting " + (currentDirection + moveDirection.normalized);
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Debug 2 " + (currentDirection + moveDirection.normalized);
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + IsGrounded();
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
@@ -204,7 +214,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), f, out hit, groundAngleCheckDistance)) {
 
-            //Debug.Log(Vector3.Angle(hit.normal, transform.up)); debug show angle
+            Debug.Log(Vector3.Angle(hit.normal, transform.up)); //debug show angle
 
             if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + f * groundAngleCheckDistance, Color.cyan, 1f);
@@ -219,6 +229,9 @@ public class PlayerController : MonoBehaviour
         }
 
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
+
+        //Animate third person 
+        animator.SetFloat("vInput", movementInput.y);
     }
 
     void OnTest1() {
