@@ -71,16 +71,13 @@ public class PlayerControllerEditor : Editor
 
     public override void OnInspectorGUI() {
         base.OnInspectorGUI();
-
+        
         EditorGUILayout.Space(20);
 
         serializedObject.Update();
 
         PlayerController controller = (PlayerController)target;
         Undo.RecordObject(controller, ("Changed player controller variable"));
-
-
-        GUILayout.Label("Player controller");
 
         # region Camera settings
         cameraSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(cameraSettingsDD, "Camera settings");
@@ -152,9 +149,9 @@ public class PlayerControllerEditor : Editor
             GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Gravity adjustment limits");
                 GUILayout.Label("Min");
-                controller.cameraAngleLimits.x = EditorGUILayout.FloatField(controller.cameraAngleLimits.x);
+                controller.maxGravityChange.x = EditorGUILayout.FloatField(controller.maxGravityChange.x);
                 GUILayout.Label("Max");
-                controller.cameraAngleLimits.y = EditorGUILayout.FloatField(controller.cameraAngleLimits.y);
+                controller.maxGravityChange.y = EditorGUILayout.FloatField(controller.maxGravityChange.y);
             GUILayout.EndHorizontal();
 
             EditorGUILayout.PropertyField(attractor);

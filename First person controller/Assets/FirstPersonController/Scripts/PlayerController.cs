@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Numerics;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR;
 using static UnityEngine.Rendering.DebugUI;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
@@ -31,6 +33,7 @@ public class PlayerController : MonoBehaviour
     public float acceleration = 10;
     public float playerDrag = 1;
     public AnimationCurve verticalInputMap;
+    public float TPRotationSpeed = 500;
 
     //Junmping variables
     public float jumpHeight = 1;
@@ -61,6 +64,7 @@ public class PlayerController : MonoBehaviour
 
     //misc game variables
     float upAngle = 0;
+    float sideAngle = 0;
     [SerializeField]Quaternion targetRotation = Quaternion.identity;
     CinemachineVirtualCamera cam;
     Vector3 currentDirection;
@@ -68,6 +72,7 @@ public class PlayerController : MonoBehaviour
     bool sprinting;
     Quaternion toRotation;
     [SerializeField]bool grounded;
+    Vector3 horizontalVelocity;
 
 
     Vector3 f;
@@ -117,7 +122,7 @@ public class PlayerController : MonoBehaviour
     //Limit movement speed
     public void LimitPlayerSpeed() {
         Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
-        Vector3 horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
+        horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
 
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
 
@@ -151,18 +156,25 @@ public class PlayerController : MonoBehaviour
         //    transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, lookSpeed * Time.deltaTime);
         //}
 
-        //if (movementInput.sqrMagnitude != 0) {
-        //    float targetAngle = Mathf.Atan2(movementInput.x, movementInput.y) * Mathf.Rad2Deg;
-        //    test.transform.rotation = Quaternion.Euler(new Vector3(0, targetAngle, 0));
-        //}
-
-        //targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
-
+        //Rotate player
+        if (movementInput.sqrMagnitude != 0) {
+            float targetAngle = Mathf.Atan2(movementInput.x, movementInput.y) * Mathf.Rad2Deg;
+            //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0));
+            Quaternion angle = Quaternion.LookRotation(horizontalVelocity.normalized);
+        
+            //transform.localRotation = Quaternion.RotateTowards(transform.localRotation, Quaternion.Inverse(angle), TPRotationSpeed * Time.deltaTime);
+            test.transform.localRotation = Quaternion.RotateTowards(test.transform.localRotation, angle, TPRotationSpeed * Time.deltaTime);
+        }
+        
+        //Camera rotation
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
-        cameraPivot.localRotation = Quaternion.Euler(-upAngle, 0, 0);
-        transform.Rotate(Vector3.up, mousePosition.x);
-
+        sideAngle = mousePosition.x + sideAngle;
+        cam.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
+        
         targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
+
+
+
     }
 
     //Checks to see if the player is grounded as well as the angle of the ground
@@ -179,20 +191,13 @@ public class PlayerController : MonoBehaviour
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + f * groundAngleCheckDistance, Color.cyan, 1f);
         
                 SetGravityDirection(9.81f, hit.normal, true);
-                grounded = true;
-        
             }
-        }
-        
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, groundAngleCheckDistance)) {
+        }       
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, 10f)) {
             if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 SetGravityDirection(9.81f, hit.normal, false);
-                grounded = true;
                 Debug.Log("Checkd ground");
             }
-        }
-        else {
-            grounded = false;
         }
     }
 
@@ -265,11 +270,10 @@ public class PlayerController : MonoBehaviour
 
         GroundChecks();
 
-
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
 
         //Animate third person 
-        animator.SetFloat("vInput", movementInput.magnitude);
+        animator.GetComponent<Animator>().SetFloat("vInput", movementInput.magnitude);
     }
 
     void OnTest1() {
@@ -283,4 +287,5 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate() {
         MovePlayer();
     }
+
 }
