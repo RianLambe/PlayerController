@@ -4,10 +4,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using TMPro;
+using TreeEditor;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.HID;
 using UnityEngine.XR;
 using static UnityEngine.Rendering.DebugUI;
 using Quaternion = UnityEngine.Quaternion;
@@ -116,6 +119,7 @@ public class PlayerController : MonoBehaviour
     //Moves rhe player along the desired plane
     void MovePlayer() {
         rb.AddForce(moveDirection.normalized * moveSpeed * acceleration, ForceMode.Force);
+
         cam.m_Lens.FieldOfView = cameraFOVCurve.Evaluate(rb.velocity.magnitude);
     }
 
@@ -158,20 +162,28 @@ public class PlayerController : MonoBehaviour
 
         //Rotate player
         if (movementInput.sqrMagnitude != 0) {
-            float targetAngle = Mathf.Atan2(movementInput.x, movementInput.y) * Mathf.Rad2Deg;
-            //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0));
-            Quaternion angle = Quaternion.LookRotation(horizontalVelocity.normalized);
+            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
         
-            //transform.localRotation = Quaternion.RotateTowards(transform.localRotation, Quaternion.Inverse(angle), TPRotationSpeed * Time.deltaTime);
-            test.transform.localRotation = Quaternion.RotateTowards(test.transform.localRotation, angle, TPRotationSpeed * Time.deltaTime);
+            Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0));
+            //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0) - transform.up);
+            //Quaternion angle = Quaternion.LookRotation(transform.up, new Vector3(0, targetAngle, 0));
+        
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
+            targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
+        
         }
-        
-        //Camera rotation
-        upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
+
         sideAngle = mousePosition.x + sideAngle;
-        cam.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
-        
-        targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
+        upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
+        cam.transform.rotation = Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0));
+        //cam.transform.rotation = Quaternion.LookRotation(transform.up, new Vector3(-upAngle, sideAngle, 0));
+
+
+        //Camera rotation
+        //upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
+        //sideAngle = mousePosition.x + sideAngle;
+        //cam.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
+        //
 
 
 
@@ -210,11 +222,14 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("sprinting", sprinting);
 
         //Gets axis inputs from the player
-        mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed;
+        mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed; //Mouse inputs
         mousePosition.y = Mathf.Clamp(mousePosition.y, cameraAngleLimits.x, cameraAngleLimits.y);
-        movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>();
+
+        movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
         moveDirection = (transform.forward * movementInput.y) + (transform.right * movementInput.x);
-        animator.SetFloat("inputMagnitude", movementInput.magnitude);
+        moveDirection = Quaternion.Euler(transform.up * cam.transform.localRotation.eulerAngles.y) * moveDirection;
+
+        animator.SetFloat("inputMagnitude", movementInput.magnitude); 
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
@@ -249,7 +264,7 @@ public class PlayerController : MonoBehaviour
 
         //Debug text 
         GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Movement " + moveDirection;
-        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Debug 2 " + (currentDirection + moveDirection.normalized);
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Camera rotation : " + cam.transform.localRotation.eulerAngles;
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
