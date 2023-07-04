@@ -817,6 +817,7 @@ MonoBehaviour:
   grounded: 0
   test: {fileID: 0}
   cameraPivot: {fileID: 154698633}
+  testfloat: 0
 --- !u!54 &272413267
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3268,6 +3269,7 @@ MonoBehaviour:
   grounded: 0
   test: {fileID: 461426391}
   cameraPivot: {fileID: 1823688467}
+  testfloat: 0
 --- !u!54 &2143154704
 Rigidbody:
   m_ObjectHideFlags: 0
