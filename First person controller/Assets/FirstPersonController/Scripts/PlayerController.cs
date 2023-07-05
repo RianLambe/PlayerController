@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.UIElements;
 using UnityEngine.XR;
+using static UnityEditor.Experimental.GraphView.GraphView;
 using static UnityEngine.Rendering.DebugUI;
 using Cursor = UnityEngine.Cursor;
 using Quaternion = UnityEngine.Quaternion;
@@ -159,42 +160,52 @@ public class PlayerController : MonoBehaviour
         //    transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, lookSpeed * Time.deltaTime);
         //}
 
+
+        float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
+
+        Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0)); //working
+        Quaternion storedCamRot = cam.transform.rotation;
+
+
         //Rotate player
         if (movementInput.sqrMagnitude != 0) {
-            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
 
 
             //Quaternion angle = Quaternion.Euler(new Vector3(0, 90, 0));
             //Quaternion angle = Quaternion.Euler(new Vector3(0, testfloat, 0));
             //quaternion angle = Quaternion.Euler(0, targetAngle, 0); ;
 
-            Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0));
 
             //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0) - transform.up);
             //Quaternion angle = Quaternion.LookRotation(transform.up, new Vector3(0, targetAngle, 0));
 
 
-            //transform.rotation = angle;
+            transform.rotation = angle;
             //transform.rotation = Quaternion.RotateTowards(transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
+            //cam.transform.rotation = storedCamRot;
             targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
-        
+
         }
 
         //Camera rotation
         sideAngle = mousePosition.x + sideAngle;
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
-        //cam.transform.rotation = Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0));
-        cam.transform.rotation = Quaternion.FromToRotation(new Vector3(-upAngle, sideAngle, 0), transform.up);
 
+        //cam.transform.rotation =  Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0)) * Quaternion.Euler(transform.up); //almost working
+        cam.transform.rotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(cam.transform.forward, transform.transform.up);
 
-        //cam.transform.rotation = Quaternion.LookRotation(transform.up, new Vector3(-upAngle, sideAngle, 0));
+        //cam.transform.rotation = Quaternion.AngleAxis(45, transform.up) * transform.rotation;
+
+        //cam.transform.rotation = Quaternion.Inverse(angle);
+
+        //cam.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
 
 
         //Camera rotation
         //upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
         //sideAngle = mousePosition.x + sideAngle;
         //cam.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
-        //
+
 
 
 
