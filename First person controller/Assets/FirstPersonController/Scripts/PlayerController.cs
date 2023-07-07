@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.HID;
+using UnityEngine.PlayerLoop;
 using UnityEngine.UIElements;
 using UnityEngine.XR;
 using static UnityEditor.Experimental.GraphView.GraphView;
@@ -67,7 +68,7 @@ public class PlayerController : MonoBehaviour
     float upAngle = 0;
     float sideAngle = 0;
     [SerializeField]Quaternion targetRotation = Quaternion.identity;
-    CinemachineVirtualCamera cam;
+    public CinemachineVirtualCamera cam;
     Vector3 currentDirection;
     int numberOfJumps;
     bool sprinting;
@@ -145,6 +146,8 @@ public class PlayerController : MonoBehaviour
         Physics.gravity = upVector * -9.81f;
     }
 
+    public Quaternion camRotation;
+
     //Rotates the players camera
     void RotatePlayer() {
         //----Working fp camera controller---//
@@ -179,12 +182,12 @@ public class PlayerController : MonoBehaviour
             //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0) - transform.up);
             //Quaternion angle = Quaternion.LookRotation(transform.up, new Vector3(0, targetAngle, 0));
 
-
-            transform.rotation = angle;
+            Debug.Log(angle);
+            test.transform.rotation = angle;
             //transform.rotation = Quaternion.RotateTowards(transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
             //cam.transform.rotation = storedCamRot;
             targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
-
+            Debug.Log(angle.eulerAngles);
         }
 
         //Camera rotation
@@ -192,7 +195,17 @@ public class PlayerController : MonoBehaviour
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
 
         //cam.transform.rotation =  Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0)) * Quaternion.Euler(transform.up); //almost working
-        cam.transform.rotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(cam.transform.forward, transform.transform.up);
+
+
+        //camRotation = Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0));
+        //camRotation = Quaternion.LookRotation(transform.up, storedCamRot.eulerAngles);
+        //camRotation = camRotation * Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0));
+
+        //cam.transform.rotation = angle;
+
+        //cam.transform.rotation = Quaternion.LookRotation(transform.rotation.eulerAngles, transform.up);
+
+        //cam.transform.rotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(cam.transform.forward, transform.transform.up);
 
         //cam.transform.rotation = Quaternion.AngleAxis(45, transform.up) * transform.rotation;
 
@@ -249,7 +262,7 @@ public class PlayerController : MonoBehaviour
 
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
         moveDirection = (transform.forward * movementInput.y) + (transform.right * movementInput.x);
-        moveDirection = Quaternion.Euler(transform.up * cam.transform.localRotation.eulerAngles.y) * moveDirection;
+        //moveDirection = Quaternion.Euler(transform.up * cam.transform.localRotation.eulerAngles.y) * moveDirection;
 
         animator.SetFloat("inputMagnitude", movementInput.magnitude); 
 
@@ -307,6 +320,8 @@ public class PlayerController : MonoBehaviour
 
         GroundChecks();
 
+
+        //Rotates player to target direection
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
 
         //Animate third person 
@@ -324,5 +339,7 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate() {
         MovePlayer();
     }
+
+    
 
 }
