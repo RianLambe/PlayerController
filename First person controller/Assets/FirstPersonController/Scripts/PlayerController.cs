@@ -36,7 +36,10 @@ public class PlayerController : MonoBehaviour
     public float acceleration = 10;
     public float playerDrag = 1;
     public AnimationCurve verticalInputMap;
+    public enum cameraStyles {Standard, Locked, Focused}
+    public cameraStyles cameraStyle;
     public float TPRotationSpeed = 500;
+    public Transform cameraTarget;
 
     //Junmping variables
     public float jumpHeight = 1;
@@ -145,11 +148,27 @@ public class PlayerController : MonoBehaviour
     //Rotates the players camera
     void RotatePlayer() {
 
-        Quaternion angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+        Quaternion angle = Quaternion.identity;
+            
+
+        switch (cameraStyle) {
+            case cameraStyles.Standard:
+                angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+                break;
+
+            case cameraStyles.Locked:
+                angle = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraPivot.forward, transform.up), transform.up);
+                break;
+
+            case cameraStyles.Focused:
+                angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+                break;
+        }
+
+        
 
         //Rotate player
         if (movementInput != Vector2.zero) {
-            //test.transform.rotation = angle;
             test.transform.rotation = Quaternion.RotateTowards(test.transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
             targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
         }
@@ -179,7 +198,6 @@ public class PlayerController : MonoBehaviour
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, 10f)) {
             if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 SetGravityDirection(9.81f, hit.normal, false);
-                Debug.Log("Checkd ground");
             }
         }
     }

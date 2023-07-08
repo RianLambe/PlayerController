@@ -1,4 +1,6 @@
 using Cinemachine.Editor;
+using System;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditorInternal;
@@ -95,8 +97,26 @@ public class PlayerControllerEditor : Editor
             GUILayout.BeginHorizontal();
                 controller.cameraFOVCurve = EditorGUILayout.CurveField("Camera F.O.V. curve", controller.cameraFOVCurve);
                 GUILayout.Label("Adjustment speed");
-                controller.cameraAngleLimits.y = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
+                controller.cameraFOVAdjustSpeed = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
             GUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(15f);
+
+            //Camera tracking settings goes here//
+            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup("Camera style", controller.cameraStyle);
+
+            switch (controller.cameraStyle) {
+                case PlayerController.cameraStyles.Standard:
+                    controller.TPRotationSpeed = EditorGUILayout.FloatField("Character rotation speed", controller.TPRotationSpeed);
+                    break;
+
+                case PlayerController.cameraStyles.Locked:
+                    break;
+
+                case PlayerController.cameraStyles.Focused:
+                    //controller.cameraTarget = EditorGUILayout.ObjectField("Camera Target", controller.cameraTarget, typeof(Transform)) as Transform;
+                    break;              
+            }
 
             EditorGUILayout.Space(20);
         }
