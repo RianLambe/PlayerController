@@ -92,7 +92,11 @@ public class PlayerControllerEditor : Editor
                 controller.cameraAngleLimits.y = EditorGUILayout.FloatField(controller.cameraAngleLimits.y);
             GUILayout.EndHorizontal();
 
-            controller.cameraFOVCurve = EditorGUILayout.CurveField("Camera F.O.V. curve", controller.cameraFOVCurve);
+            GUILayout.BeginHorizontal();
+                controller.cameraFOVCurve = EditorGUILayout.CurveField("Camera F.O.V. curve", controller.cameraFOVCurve);
+                GUILayout.Label("Adjustment speed");
+                controller.cameraAngleLimits.y = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
+            GUILayout.EndHorizontal();
 
             EditorGUILayout.Space(20);
         }

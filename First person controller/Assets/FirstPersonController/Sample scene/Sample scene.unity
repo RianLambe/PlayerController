@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 2158.1846, g: 2263.2773, b: 3288.4805, a: 1}
+  m_IndirectSpecularColor: {r: 2160.126, g: 2264.5137, b: 3287.9219, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -787,8 +787,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  walkSpeed: 5
-  sprintSpeed: 8
+  cameraFOVAdjustSpeed: 0.1
+  walkSpeed: 3
+  sprintSpeed: 5
   acceleration: 40
   playerDrag: 10
   verticalInputMap:
@@ -816,10 +817,8 @@ MonoBehaviour:
   targetRotation: {x: 0, y: 0, z: 0, w: 1}
   cam: {fileID: 0}
   grounded: 0
-  test: {fileID: 0}
+  test: {fileID: 1936926902}
   cameraPivot: {fileID: 154698633}
-  testfloat: 0
-  camRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!54 &272413267
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2168,6 +2167,7 @@ GameObject:
   - component: {fileID: 1823688467}
   - component: {fileID: 1823688469}
   - component: {fileID: 1823688470}
+  - component: {fileID: 1823688471}
   m_Layer: 0
   m_Name: Player camera
   m_TagString: MainCamera
@@ -2183,12 +2183,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1823688464}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.7, z: 0}
+  m_LocalPosition: {x: 0, y: 1.6999998, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1821583423}
-  m_Father: {fileID: 2143154708}
+  m_Father: {fileID: 2132731370}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1823688469
@@ -2209,10 +2209,10 @@ MonoBehaviour:
   m_StreamingVersion: 20170927
   m_Priority: 631
   m_StandbyUpdate: 2
-  m_LookAt: {fileID: 0}
+  m_LookAt: {fileID: 2143154708}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 90
+    FieldOfView: 80.00003
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -2251,6 +2251,36 @@ MonoBehaviour:
   m_Offset: {x: 0.3, y: 0, z: -1.5}
   m_ApplyAfter: 1
   m_PreserveComposition: 0
+--- !u!114 &1823688471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823688464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e501d18bb52cf8c40b1853ca4904654f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_CollideAgainst:
+    serializedVersion: 2
+    m_Bits: 8
+  m_IgnoreTag: Player
+  m_TransparentLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_MinimumDistanceFromTarget: 0.1
+  m_AvoidObstacles: 1
+  m_DistanceLimit: 0
+  m_MinimumOcclusionTime: 0
+  m_CameraRadius: 0.1
+  m_Strategy: 0
+  m_MaximumEffort: 4
+  m_SmoothingTime: 0
+  m_Damping: 0
+  m_DampingWhenOccluded: 0
+  m_OptimalTargetDistance: 0
 --- !u!1001 &1842463887
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2543,7 +2573,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 90
+  field of view: 80.00003
   orthographic: 0
   orthographic size: 10
   m_Depth: 0
@@ -2610,6 +2640,12 @@ MonoBehaviour:
   m_CameraActivatedEvent:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &1936926902 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8aa1884576a88a7419502d851c2aac0f,
+    type: 3}
+  m_PrefabInstance: {fileID: 962637402}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1946908885
 GameObject:
   m_ObjectHideFlags: 0
@@ -3122,6 +3158,38 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!1 &2132731369
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2132731370}
+  m_Layer: 0
+  m_Name: Gimbal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2132731370
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2132731369}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1823688467}
+  m_Father: {fileID: 2143154708}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2143154702
 GameObject:
   m_ObjectHideFlags: 0
@@ -3156,25 +3224,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lookSpeed: 0.2
-  cameraAngleLimits: {x: -80, y: 80}
+  cameraAngleLimits: {x: -80, y: 0.1}
   cameraOffset: {x: 1.85, y: 0, z: 0}
   cameraFOVCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 90
-      inSlope: 0
-      outSlope: 0
+      value: 80
+      inSlope: 3.3333333
+      outSlope: 3.3333333
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 1
+      time: 3
       value: 90
-      inSlope: 0
-      outSlope: 0
+      inSlope: 5.4166665
+      outSlope: 5.4166665
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 5
+      value: 105
+      inSlope: 7.5
+      outSlope: 7.5
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
@@ -3182,6 +3259,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  cameraFOVAdjustSpeed: 0.1
   walkSpeed: 3
   sprintSpeed: 5
   acceleration: 40
@@ -3213,8 +3291,6 @@ MonoBehaviour:
   grounded: 0
   test: {fileID: 461426391}
   cameraPivot: {fileID: 1823688467}
-  testfloat: 0
-  camRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!54 &2143154704
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3243,7 +3319,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1823688467}
+  - {fileID: 2132731370}
   - {fileID: 195253447}
   - {fileID: 700497116}
   m_Father: {fileID: 0}
