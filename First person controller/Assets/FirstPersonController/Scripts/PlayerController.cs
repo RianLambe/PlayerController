@@ -164,27 +164,21 @@ public class PlayerController : MonoBehaviour
         //}
 
 
+        //float targetAngle = Mathf.Atan2(movementInput.x, movementInput.y) * Mathf.Rad2Deg;
         float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
 
-        Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0)); //working
+
+        //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0)); //working
+        Quaternion angle = Quaternion.LookRotation(f.normalized, transform.up);
         Quaternion storedCamRot = cam.transform.rotation;
 
+        Vector3 inputDir = transform.forward * movementInput.x + transform.right * movementInput.y;
 
         //Rotate player
-        if (movementInput.sqrMagnitude != 0) {
+        if (movementInput != Vector2.zero) {
 
-
-            //Quaternion angle = Quaternion.Euler(new Vector3(0, 90, 0));
-            //Quaternion angle = Quaternion.Euler(new Vector3(0, testfloat, 0));
-            //quaternion angle = Quaternion.Euler(0, targetAngle, 0); ;
-
-
-            //Quaternion angle = Quaternion.Euler(new Vector3(0, targetAngle, 0) - transform.up);
-            //Quaternion angle = Quaternion.LookRotation(transform.up, new Vector3(0, targetAngle, 0));
-
-            Debug.Log(angle);
-            test.transform.rotation = angle;
-            //transform.rotation = Quaternion.RotateTowards(transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
+            //test.transform.rotation = angle;
+            test.transform.rotation = Quaternion.RotateTowards(test.transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
             //cam.transform.rotation = storedCamRot;
             targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
             Debug.Log(angle.eulerAngles);
@@ -201,23 +195,12 @@ public class PlayerController : MonoBehaviour
         //camRotation = Quaternion.LookRotation(transform.up, storedCamRot.eulerAngles);
         //camRotation = camRotation * Quaternion.Euler(new Vector3(-upAngle, sideAngle, 0));
 
-        //cam.transform.rotation = angle;
-
-        //cam.transform.rotation = Quaternion.LookRotation(transform.rotation.eulerAngles, transform.up);
-
-        //cam.transform.rotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(cam.transform.forward, transform.transform.up);
-
-        //cam.transform.rotation = Quaternion.AngleAxis(45, transform.up) * transform.rotation;
-
-        //cam.transform.rotation = Quaternion.Inverse(angle);
-
-        //cam.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
 
 
         //Camera rotation
-        //upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
-        //sideAngle = mousePosition.x + sideAngle;
-        //cam.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
+        upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
+        sideAngle = mousePosition.x + sideAngle;
+        cameraPivot.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
 
 
 
@@ -261,7 +244,7 @@ public class PlayerController : MonoBehaviour
         mousePosition.y = Mathf.Clamp(mousePosition.y, cameraAngleLimits.x, cameraAngleLimits.y);
 
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
-        moveDirection = (transform.forward * movementInput.y) + (transform.right * movementInput.x);
+        moveDirection = (cameraPivot.transform.forward * movementInput.y) + (cameraPivot.transform.right * movementInput.x);
         //moveDirection = Quaternion.Euler(transform.up * cam.transform.localRotation.eulerAngles.y) * moveDirection;
 
         animator.SetFloat("inputMagnitude", movementInput.magnitude); 
@@ -312,7 +295,7 @@ public class PlayerController : MonoBehaviour
         //    f = transform.forward * movementInput.y + transform.right * movementInput.x;
         //}
 
-        f = transform.forward * inputCache.y + transform.right * inputCache.x;
+        f = cameraPivot.transform.forward * inputCache.y + cameraPivot.transform.right * inputCache.x;
 
 
 
