@@ -18,10 +18,6 @@ using Vector3 = UnityEngine.Vector3;
 
 public class PlayerController : MonoBehaviour
 {
-    //Components
-    Rigidbody rb;
-    Animator animator;
-
     //Camera settings
     public float lookSpeed = .2f;
     public Vector2 cameraAngleLimits = new Vector2(-80, 80);
@@ -44,6 +40,9 @@ public class PlayerController : MonoBehaviour
     //Junmping variables
     public float jumpHeight = 1;
     public int maxJumps = 1;
+
+    public bool dynamicJumpForce;           // Add dyanamic jumps //
+    public AnimationCurve dynaamicJumpForceCurve;
 
     //Ground check variables
     public Vector3 groundCheckOrigin;
@@ -68,30 +67,33 @@ public class PlayerController : MonoBehaviour
     Vector3 moveDirection;
     Vector2 mousePosition;
 
+    //Object assignment
+    Rigidbody rb;
+    public Transform playerObject;
+    public CinemachineVirtualCamera playerCamera;
+
     //misc game variables
     float upAngle = 0;
     float sideAngle = 0;
     [SerializeField]Quaternion targetRotation = Quaternion.identity;
-    public CinemachineVirtualCamera cam;
     Vector3 currentDirection;
     int numberOfJumps;
     bool sprinting;
     [SerializeField]bool grounded;
     Vector3 horizontalVelocity;
 
+    Vector3 localVelocty;
 
     Vector3 cachedMoveDirection;
     Vector3 gravityCache;
     Vector2 inputCache;
 
-    public GameObject test;
-    public Transform cameraPivot;
+    //public Transform cam;
 
     //Called on script load
     private void Awake() {
         //Get references to GaemObjects 
-        cam = GetComponentInChildren<CinemachineVirtualCamera>();
-        animator = GetComponent<Animator>();
+        playerCamera = GetComponentInChildren<CinemachineVirtualCamera>();
         rb = GetComponent<Rigidbody>();
         pi = GetComponent<PlayerInput>();
 
@@ -100,9 +102,9 @@ public class PlayerController : MonoBehaviour
 
     //Checks if the player is touching the ground -- Soon to be depreciated --
     bool IsGrounded() {
-
         grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
 
+        playerObject.GetComponent<Animator>().SetBool("falling", !grounded);
         return Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
     }
 
@@ -112,8 +114,7 @@ public class PlayerController : MonoBehaviour
         if (numberOfJumps < maxJumps) {
             rb.AddForce(transform.up * jumpHeight, ForceMode.Impulse);
             numberOfJumps ++;
-            Debug.Log(numberOfJumps);
-            animator.SetTrigger("jump");
+            playerObject.GetComponent<Animator>().SetTrigger("jump");
         }
     }
 
@@ -121,7 +122,7 @@ public class PlayerController : MonoBehaviour
     void MovePlayer() {
         rb.AddForce(moveDirection * moveSpeed * acceleration, ForceMode.Force);
 
-        cam.m_Lens.FieldOfView = Mathf.Lerp(cam.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
+        playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
     }
 
     //Limit movement speed
@@ -149,34 +150,39 @@ public class PlayerController : MonoBehaviour
     void RotatePlayer() {
 
         Quaternion angle = Quaternion.identity;
-            
 
-        switch (cameraStyle) {
-            case cameraStyles.Standard:
-                angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
-                break;
 
-            case cameraStyles.Locked:
-                angle = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraPivot.forward, transform.up), transform.up);
-                break;
+        if (cachedMoveDirection != Vector3.zero) {
+            switch (cameraStyle) {
+                case cameraStyles.Standard:
+                    angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+                    break;
 
-            case cameraStyles.Focused:
-                angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
-                break;
+                case cameraStyles.Locked:
+                    angle = Quaternion.LookRotation(Vector3.ProjectOnPlane(playerCamera.transform.forward, transform.up), transform.up);
+                    break;
+
+                case cameraStyles.Focused:
+                    angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+                    playerCamera.LookAt = cameraTarget;
+                    break;
+            }
         }
+
+
 
         
 
         //Rotate player
         if (movementInput != Vector2.zero) {
-            test.transform.rotation = Quaternion.RotateTowards(test.transform.rotation, angle, TPRotationSpeed * Time.deltaTime);
+            playerObject.rotation = Quaternion.RotateTowards(playerObject.rotation, angle, TPRotationSpeed * Time.deltaTime);
             targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
         }
 
         //Camera rotation
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
         sideAngle = mousePosition.x + sideAngle;
-        cameraPivot.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
+        playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
     }
 
     //Checks to see if the player is grounded as well as the angle of the ground
@@ -207,21 +213,21 @@ public class PlayerController : MonoBehaviour
         //Sets players movment speed 
         sprinting = pi.actions.FindAction("Sprint").IsPressed();
         moveSpeed = sprinting ? sprintSpeed : walkSpeed;
-        animator.SetBool("sprinting", sprinting);
+        playerObject.GetComponent<Animator>().SetBool("sprinting", sprinting);
 
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed; //Mouse inputs
         mousePosition.y = Mathf.Clamp(mousePosition.y, cameraAngleLimits.x, cameraAngleLimits.y);
 
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
-        moveDirection = cameraPivot.transform.forward * movementInput.y + cameraPivot.transform.right * movementInput.x;
+        moveDirection = playerCamera.transform.forward * movementInput.y + playerCamera.transform.right * movementInput.x;
         moveDirection = Vector3.ProjectOnPlane(moveDirection, transform.up).normalized;
 
         if (movementInput != Vector2.zero) inputCache = movementInput; //The saved direction from the last time the player moved
-        cachedMoveDirection = cameraPivot.transform.forward * inputCache.y + cameraPivot.transform.right * inputCache.x;
+        cachedMoveDirection = playerCamera.transform.forward * inputCache.y + playerCamera.transform.right * inputCache.x;
         cachedMoveDirection = Vector3.ProjectOnPlane(cachedMoveDirection, transform.up).normalized;
 
-        animator.SetFloat("inputMagnitude", movementInput.magnitude); 
+        //animator.SetFloat("inputMagnitude", movementInput.magnitude); 
 
         //Temp player teleport upwards code
         if (Input.GetKeyDown(KeyCode.F)) {
@@ -254,9 +260,11 @@ public class PlayerController : MonoBehaviour
         //Rotates the player camera
         RotatePlayer();
 
+        localVelocty = transform.InverseTransformDirection(rb.velocity);
+
         //Debug text 
         GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Movement " + moveDirection;
-        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Camera rotation : " + cam.transform.localRotation.eulerAngles;
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
@@ -269,11 +277,17 @@ public class PlayerController : MonoBehaviour
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
 
         //Animate third person 
-        animator.GetComponent<Animator>().SetFloat("vInput", movementInput.magnitude);
+        playerObject.GetComponent<Animator>().SetFloat("inputMagnitude", movementInput.magnitude, .1f, Time.deltaTime);
+        playerObject.GetComponent<Animator>().SetFloat("vInput", movementInput.y, .1f, Time.deltaTime);
+        playerObject.GetComponent<Animator>().SetFloat("hInput", movementInput.x, .1f, Time.deltaTime);
+        playerObject.GetComponent<Animator>().SetFloat("verticalVelocity", localVelocty.y, .1f, Time.deltaTime);
+
     }
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
         MovePlayer();
     }
+
+    
 }

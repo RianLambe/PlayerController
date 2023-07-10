@@ -1,3 +1,4 @@
+using Cinemachine;
 using Cinemachine.Editor;
 using System;
 using System.Linq;
@@ -41,7 +42,9 @@ public class PlayerControllerEditor : Editor
     bool cameraSettingsDD = false;
     bool movmentSettingsDD = false;
     bool jumpSettingsDD = false;
-    bool gravitySettings = false;
+    bool gravitySettingsDD = false;
+    bool objectAssignmentDD = false;
+
 
 
     private void OnEnable() {
@@ -72,9 +75,9 @@ public class PlayerControllerEditor : Editor
     }
 
     public override void OnInspectorGUI() {
-        base.OnInspectorGUI();
-        
-        EditorGUILayout.Space(20);
+        //Base inspectotor 
+        //base.OnInspectorGUI();  
+        //EditorGUILayout.Space(20);
 
         serializedObject.Update();
 
@@ -111,10 +114,12 @@ public class PlayerControllerEditor : Editor
                     break;
 
                 case PlayerController.cameraStyles.Locked:
+                    controller.TPRotationSpeed = EditorGUILayout.FloatField("Character rotation speed", controller.TPRotationSpeed);
                     break;
 
                 case PlayerController.cameraStyles.Focused:
-                    //controller.cameraTarget = EditorGUILayout.ObjectField("Camera Target", controller.cameraTarget, typeof(Transform)) as Transform;
+                    controller.TPRotationSpeed = EditorGUILayout.FloatField("Character rotation speed", controller.TPRotationSpeed);
+                    controller.cameraTarget = EditorGUILayout.ObjectField("Camera Target", controller.cameraTarget, typeof(Transform), true) as Transform;
                     break;              
             }
 
@@ -155,8 +160,8 @@ public class PlayerControllerEditor : Editor
         #endregion
 
         #region Gravity settings
-        gravitySettings = EditorGUILayout.BeginFoldoutHeaderGroup(gravitySettings, "Gravity settings");
-        if (gravitySettings) {      
+        gravitySettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(gravitySettingsDD, "Gravity settings");
+        if (gravitySettingsDD) {      
             controller.groundCheckOrigin = EditorGUILayout.Vector3Field("Ground check origin", controller.groundCheckOrigin);
             EditorGUILayout.PropertyField(groundCheckDistance);
 
@@ -179,6 +184,19 @@ public class PlayerControllerEditor : Editor
             GUILayout.EndHorizontal();
 
             EditorGUILayout.PropertyField(attractor);
+
+            EditorGUILayout.Space(20);
+        }
+        EditorGUILayout.EndFoldoutHeaderGroup();
+        #endregion
+
+        #region Object assignment
+        objectAssignmentDD = EditorGUILayout.BeginFoldoutHeaderGroup(objectAssignmentDD, "Object assignment");
+        if (objectAssignmentDD) {
+            //controller.test = EditorGUILayout.ObjectField("Camera Target", controller.test, typeof(Transform), true) as Transform;
+            controller.playerObject = EditorGUILayout.ObjectField("Player object", controller.playerObject, typeof(Transform), true) as Transform;
+            controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
+
 
             EditorGUILayout.Space(20);
         }
