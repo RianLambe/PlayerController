@@ -1,9 +1,11 @@
 using Cinemachine;
+using Cinemachine.Utility;
 using System;
 using System.Numerics;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.PlayerLoop;
@@ -50,6 +52,9 @@ public class PlayerController : MonoBehaviour
     public Vector3 groundAngleCheckOrigin;
     public float groundAngleCheckDistance = .7f;
     public LayerMask groundMask;
+    public float maxStepHeight;
+    public float maxStepDepth;
+    public float stepSmoothing;
     [Range(0,10)]public float gravityChangeSpeed = .1f;
     public Vector2 maxGravityChange;
     private float angleTolerance = 0.001f;
@@ -87,6 +92,10 @@ public class PlayerController : MonoBehaviour
     Vector3 cachedMoveDirection;
     Vector3 gravityCache;
     Vector2 inputCache;
+    RaycastHit hit;
+
+    public Vector3 slopeAngle;
+    bool onSlope;
 
     //public Transform cam;
 
@@ -104,7 +113,6 @@ public class PlayerController : MonoBehaviour
     bool IsGrounded() {
         grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
 
-        playerObject.GetComponent<Animator>().SetBool("falling", !grounded);
         return Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundMask);
     }
 
@@ -120,7 +128,9 @@ public class PlayerController : MonoBehaviour
 
     //Moves rhe player along the desired plane
     void MovePlayer() {
-        rb.AddForce(moveDirection * moveSpeed * acceleration, ForceMode.Force);
+        //rb.AddForce(moveDirection * moveSpeed * acceleration, ForceMode.Force);
+        rb.AddForce(slopeAngle * moveSpeed * acceleration, ForceMode.Force);
+
 
         playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
     }
@@ -129,20 +139,24 @@ public class PlayerController : MonoBehaviour
     public void LimitPlayerSpeed() {
         Vector3 convertedVelocity = transform.InverseTransformDirection(rb.velocity);
         horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
-
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
+
+        //if (rb.velocity.magnitude > moveSpeed) {
+        //    rb.velocity = rb.velocity.normalized - rb.velocity * moveSpeed;
+        //}
 
         if (horizontalVelocity.magnitude > moveSpeed) {
             rb.velocity = transform.TransformDirection(limitedVal.x, convertedVelocity.y, limitedVal.z);
+            //rb.velocity = Vector3.ProjectOnPlane(new Vector3(limitedVal.x, convertedVelocity.y, limitedVal.z), hit.normal);
         }
 
-        if (rb.velocity != Vector3.zero) 
-        currentDirection = transform.TransformDirection(convertedVelocity.normalized.x, convertedVelocity.y, convertedVelocity.normalized.z).normalized;
+        //if (rb.velocity != Vector3.zero) 
+        //currentDirection = transform.TransformDirection(convertedVelocity.normalized.x, convertedVelocity.y, convertedVelocity.normalized.z).normalized;
     }
 
     //Sets the direction of the gravity
     public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector, bool concerveMomentum) {
-        targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+        //targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
         Physics.gravity = upVector * -9.81f;
     }
 
@@ -185,27 +199,55 @@ public class PlayerController : MonoBehaviour
         playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
     }
 
+    void gravity() { 
+        rb.AddForce(transform.up * -9.81f, ForceMode.Force);
+    }
+
     //Checks to see if the player is grounded as well as the angle of the ground
     void GroundChecks() {
-        RaycastHit hit;
+
+
+        ;
+        //
         if (attractor != null) {
             SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized, true);
         }
+        //
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), moveDirection, out hit, groundAngleCheckDistance)) {
         
-            //Debug.Log(Vector3.Angle(hit.normal, transform.up)); //debug show angle
+            if (!Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin + new Vector3(0, maxStepHeight,0)), moveDirection, out hit, groundAngleCheckDistance + .2f)) {
+                grounded = true;
         
+                rb.position += new Vector3(0, stepSmoothing * Time.deltaTime,0);
+            }
+            else {
+                grounded = true;
+        
+                rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.y);
+            }
+        
+            //Ground angle check
             if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.cyan, 1f);
         
                 SetGravityDirection(9.81f, hit.normal, true);
             }
         }       
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, 10f)) {
-            if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
-                SetGravityDirection(9.81f, hit.normal, false);
-            }
+        //
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, 5f)) {
+
+            //if (!grounded) transform.position = hit.point;s
+
+            slopeAngle = Vector3.ProjectOnPlane(moveDirection, hit.normal).normalized;
+            Debug.Log(slopeAngle);
+            SetGravityDirection(9.81f, hit.normal, false);
+
+
+            //if (Vector3.Angle(hit.normal, transform.up) >= maxGravityChange.x + angleTolerance && Vector3.Angle(hit.normal, transform.up) <= maxGravityChange.y + angleTolerance) {
+            //    SetGravityDirection(9.81f, hit.normal, false);
+            //}
         }
+
     }
 
     //Called every frame
@@ -221,7 +263,7 @@ public class PlayerController : MonoBehaviour
 
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
         moveDirection = playerCamera.transform.forward * movementInput.y + playerCamera.transform.right * movementInput.x;
-        moveDirection = Vector3.ProjectOnPlane(moveDirection, transform.up).normalized;
+        //moveDirection = Vector3.ProjectOnPlane(moveDirection, transform.up).normalized;
 
         if (movementInput != Vector2.zero) inputCache = movementInput; //The saved direction from the last time the player moved
         cachedMoveDirection = playerCamera.transform.forward * inputCache.y + playerCamera.transform.right * inputCache.x;
@@ -235,7 +277,6 @@ public class PlayerController : MonoBehaviour
         }
 
         //Limits the players speed 
-        LimitPlayerSpeed();
 
         IsGrounded();
 
@@ -262,16 +303,24 @@ public class PlayerController : MonoBehaviour
 
         localVelocty = transform.InverseTransformDirection(rb.velocity);
 
-        //Debug text 
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Movement " + moveDirection;
-        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
-        GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
-        GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
-
-
-        Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.red);
 
         GroundChecks();
+
+        //LimitPlayerSpeed();
+
+
+        //Debug text 
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "On slope : " + onSlope;
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Horizontal : " + horizontalVelocity;
+        GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
+        GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
+        Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.red);
+        Debug.DrawRay(transform.position, transform.up * 10, Color.blue, Time.deltaTime);
+        Debug.DrawRay(transform.position, Physics.gravity.normalized * 10, Color.yellow, Time.deltaTime);
+        Debug.DrawRay(transform.position, slopeAngle * 10, Color.green, Time.deltaTime);
+
+
+
 
         //Rotates player to target direection
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
@@ -281,12 +330,15 @@ public class PlayerController : MonoBehaviour
         playerObject.GetComponent<Animator>().SetFloat("vInput", movementInput.y, .1f, Time.deltaTime);
         playerObject.GetComponent<Animator>().SetFloat("hInput", movementInput.x, .1f, Time.deltaTime);
         playerObject.GetComponent<Animator>().SetFloat("verticalVelocity", localVelocty.y, .1f, Time.deltaTime);
+        playerObject.GetComponent<Animator>().SetBool("falling", !grounded);
+
 
     }
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
         MovePlayer();
+        //gravity();
     }
 
     

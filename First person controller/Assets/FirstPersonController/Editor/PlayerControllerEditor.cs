@@ -76,8 +76,8 @@ public class PlayerControllerEditor : Editor
 
     public override void OnInspectorGUI() {
         //Base inspectotor 
-        //base.OnInspectorGUI();  
-        //EditorGUILayout.Space(20);
+        base.OnInspectorGUI();  
+        EditorGUILayout.Space(20);
 
         serializedObject.Update();
 

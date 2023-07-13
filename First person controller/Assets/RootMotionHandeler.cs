@@ -6,6 +6,7 @@ public class RootMotionHandeler : MonoBehaviour
 {
     Animator animator;
     [SerializeField] bool rootMotionEnabled;
+    Vector3 animDeltaPos;
 
     private void Awake() {
         animator = GetComponent<Animator>();
@@ -13,6 +14,13 @@ public class RootMotionHandeler : MonoBehaviour
 
     private void OnAnimatorMove() {
         if (rootMotionEnabled)
-            transform.parent.transform.position += animator.deltaPosition;
+            animDeltaPos = animator.deltaPosition;
+            //transform.parent.GetComponent<Rigidbody>().MovePosition(transform.parent.transform.position + animator.deltaPosition);
+            //transform.parent.transform.position += animator.deltaPosition;
+
+    }
+
+    private void FixedUpdate() {
+        transform.parent.GetComponent<Rigidbody>().MovePosition(transform.parent.transform.position + animDeltaPos);
     }
 }
