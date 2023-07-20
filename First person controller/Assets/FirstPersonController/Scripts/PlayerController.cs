@@ -227,8 +227,6 @@ public class PlayerController : MonoBehaviour
 
         grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer + dynamicGravityLayer);
 
-        slopeAngle = moveDirection;
-
         //Overide gravity
         if (overideGravity) {
             Debug.Log("Using overided gravity");
@@ -238,40 +236,39 @@ public class PlayerController : MonoBehaviour
             SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized, true);
         }
         //Horizontal checks
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), moveDirection, out gcHit, groundAngleCheckDistance, dynamicGravityLayer + groundLayer) && 
-            Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y) {
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), moveDirection, out gcHit, groundAngleCheckDistance, dynamicGravityLayer + groundLayer)) {
         
             float hitAngle = Vector3.Angle(gcHit.normal, transform.up);
         
         
             //Steps ---- Add check here for min angle to be considered step ---
             RaycastHit stepHit;
-            //if (Vector3.Angle(gcHit.normal, transform.up) > maxStepAngle) {
-            //    if (!Physics.Raycast(transform.TransformPoint(new Vector3(groundAngleCheckOrigin.x, groundAngleCheckOrigin.x + maxStepHeight, groundAngleCheckOrigin.z)), moveDirection, out stepHit, groundAngleCheckDistance + .2f)) {
-            //
-            //        Debug.Log("Step");
-            //
-            //        //rb.position += transform.TransformVector(new Vector3(0, stepSmoothing * Time.deltaTime, 0));
-            //        rb.position += transform.up * stepSmoothing * Time.deltaTime;
-            //        grounded = true;
-            //
-            //    }
-            //    else {
-            //        grounded = true;
-            //        Debug.Log("Something happed here");
-            //
-            //        rb.velocity = transform.TransformVector(new Vector3(rb.velocity.x, 0, rb.velocity.y));
-            //    }
-            //}
-            //else {
-            //    grounded = true;
-            //
-            //    slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
-            //    SetGravityDirection(9.81f, gcHit.normal, false);
-            //}
-        
-        
-        
+            if (Vector3.Angle(gcHit.normal, transform.up) > maxStepAngle) {
+                if (!Physics.Raycast(transform.TransformPoint(new Vector3(groundAngleCheckOrigin.x, groundAngleCheckOrigin.x + maxStepHeight, groundAngleCheckOrigin.z)), moveDirection, out stepHit, groundAngleCheckDistance + .2f)) {
+            
+                    Debug.Log("Step");
+            
+                    //rb.position += transform.TransformVector(new Vector3(0, stepSmoothing * Time.deltaTime, 0));
+                    rb.position += transform.up * stepSmoothing * Time.deltaTime;
+                    grounded = true;
+            
+                }
+                else {
+                    grounded = true;
+                    Debug.Log("Something happed here");
+            
+                    rb.velocity = transform.TransformVector(new Vector3(rb.velocity.x, 0, rb.velocity.y));
+                }
+            }
+            else {
+                grounded = true;
+            
+                slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
+                SetGravityDirection(9.81f, gcHit.normal, false);
+            }
+
+
+            //Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y
             if (gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
         
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.cyan, 1f);
@@ -281,6 +278,7 @@ public class PlayerController : MonoBehaviour
         
         }       
         
+        //Vertical checks
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out gcHit, 10f)) {
 
             //targetRotation = Quaternion.FromToRotation(transform.up, gcHit.normal) * transform.rotation;
@@ -288,7 +286,7 @@ public class PlayerController : MonoBehaviour
 
 
             if (Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
-                //slopeAngle = moveDirection;
+                slopeAngle = moveDirection;
 
                 SetGravityDirection(9.81f, gcHit.normal, true);
                 targetRotation = Quaternion.FromToRotation(transform.up, gcHit.normal) * transform.rotation;
@@ -338,10 +336,12 @@ public class PlayerController : MonoBehaviour
             gameObject.transform.position += new Vector3(0, 110, 0);
         }
 
+        GroundChecks();
         //Limits the players speed 
-        LimitPlayerSpeed();
+        //LimitPlayerSpeed();
 
         //IsGrounded();
+        LimitPlayerSpeed();
 
         //Sets player drag depending on weather they are grounded or not
         rb.drag = grounded ? playerDrag : 0;
@@ -398,12 +398,11 @@ public class PlayerController : MonoBehaviour
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
-        GroundChecks();
+        //GroundChecks();
 
         //IsGrounded();
 
         MovePlayer();
-
     }
 
     
