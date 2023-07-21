@@ -227,6 +227,12 @@ public class PlayerController : MonoBehaviour
 
         grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer + dynamicGravityLayer);
 
+        RaycastHit hit;
+        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .1f)) {
+            transform.SetParent(hit.transform.CompareTag("Moving platform") ? hit.transform : null);
+        }
+        else transform.SetParent(null);
+
         //Overide gravity
         if (overideGravity) {
             Debug.Log("Using overided gravity");
