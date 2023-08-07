@@ -155,8 +155,23 @@ public class PlayerControllerEditor : Editor
         #region Jump settings
         jumpSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(jumpSettingsDD, "Jump settings");
         if(jumpSettingsDD) {
-            EditorGUILayout.PropertyField(jumpHeight);
-            EditorGUILayout.PropertyField(maxJumps);
+            controller.jumpMode = (PlayerController.jumpModes)EditorGUILayout.EnumPopup(new GUIContent("Jump mode", "Changes the style of jumping between various modes"), controller.jumpMode);
+
+            switch (controller.jumpMode) {
+                case PlayerController.jumpModes.Standard:
+                    EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump height", "This is the height that the player will jump. Note that due to the way the physics system works within unity the player will always reach just under this height"));
+                    break;
+
+                case PlayerController.jumpModes.Charge:
+                    controller.chargeCurve = EditorGUILayout.CurveField(new GUIContent("Jump charge curve", "The height that the player will jump too depending on how long they hold the jump button. The 'X' axis represents the time and the 'Y' axis represents the height"), controller.chargeCurve);
+                    break;
+
+                case PlayerController.jumpModes.Hold:
+                    break;
+            }
+
+            EditorGUILayout.PropertyField(maxJumps, new GUIContent("Max jumps", "If this number is more than one the player will be able to complete that amount of jumps before landing again"));
+
 
             EditorGUILayout.Space(20);
         }
