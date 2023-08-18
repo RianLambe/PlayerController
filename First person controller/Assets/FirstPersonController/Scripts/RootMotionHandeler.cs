@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class RootMotionHandeler : MonoBehaviour
 {
@@ -12,7 +14,13 @@ public class RootMotionHandeler : MonoBehaviour
     }
 
     private void OnAnimatorMove() {
-        if (rootMotionEnabled)
-            transform.parent.transform.position += animator.deltaPosition;
+        if (rootMotionEnabled) {
+            Vector3 slope = transform.parent.GetComponentInParent<PlayerController>().gcHit.normal;
+
+            transform.parent.transform.position += Vector3.ProjectOnPlane(animator.deltaPosition, slope);
+
+
+        }
+        //transform.parent.transform.position += animator.deltaPosition;
     }
 }

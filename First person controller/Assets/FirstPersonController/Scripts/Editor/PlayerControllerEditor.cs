@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using static PlayerController;
 using static UnityEngine.UI.Image;
 
 [CustomEditor(typeof(PlayerController))]
@@ -171,7 +172,14 @@ public class PlayerControllerEditor : Editor
             }
 
             EditorGUILayout.PropertyField(maxJumps, new GUIContent("Max jumps", "If this number is more than one the player will be able to complete that amount of jumps before landing again"));
+            controller.coyoteTime = EditorGUILayout.FloatField(new GUIContent("Coyote time", "The amount of time after the player falls off a ledge where they can still jump"), controller.coyoteTime);
 
+            controller.jumpBufferMode = (PlayerController.jumpBufferModes)EditorGUILayout.EnumPopup(new GUIContent("Jump buffer", "When jump buffer is enabled, the player will be able to press the jump button before landing and it will cache the jump to be used straight away after landing."), controller.jumpBufferMode);
+            
+            if (controller.jumpBufferMode == jumpBufferModes.Single) {
+                controller.maxJumpBuffer = EditorGUILayout.FloatField(new GUIContent("Max jump buffer", "The maximum amount of time before landing where a jump will be added to the buffer"), controller.maxJumpBuffer);
+
+            }
 
             EditorGUILayout.Space(20);
         }
