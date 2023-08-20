@@ -190,15 +190,18 @@ public class PlayerController : MonoBehaviour
     //Limit movement speed
     public void LimitPlayerSpeed() {
         Matrix4x4 matrix4x4 = Matrix4x4.identity;
-        if (slopeAngle.sqrMagnitude != 0)
+        //if (slopeAngle.sqrMagnitude != 0)
         matrix4x4.SetTRS(Vector3.zero, Quaternion.LookRotation(-slopeAngle, gcHit.normal), Vector3.one);
 
         Vector3 convertedVelocity = matrix4x4.inverse.MultiplyVector(rb.velocity);
         horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
 
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "HV :  " + horizontalVelocity;
+
         //Control speed
         if (horizontalVelocity.magnitude > moveSpeed) {
+            Debug.Log("Exceeding");
             rb.velocity = matrix4x4.MultiplyVector(new Vector3(limitedVal.x, convertedVelocity.y, limitedVal.z));
         }
     }
@@ -299,7 +302,7 @@ public class PlayerController : MonoBehaviour
         }
 
         //-----Vertical checks-----//
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out gcHit, 10f)) {
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out gcHit, .310f)) {
 
             //Checks if the player is standing on something that has dynaamic gravity
             if (Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
@@ -389,13 +392,14 @@ public class PlayerController : MonoBehaviour
         //    //timeSinceFall = Time.time - timeSinceFall;
         //}
 
+        localVelocty = transform.InverseTransformDirection(rb.velocity);
+
         //Makes sure the player does not exceed a certain speed
-        //LimitPlayerSpeed();
+        LimitPlayerSpeed();
 
         //Rotates the player camera
         RotatePlayer();
 
-        localVelocty = transform.InverseTransformDirection(rb.velocity);
 
         //Sets values for the animation graph as well as rotates player to desired direction
         AnimateCharcter();
@@ -442,7 +446,7 @@ public class PlayerController : MonoBehaviour
     //Draws debug rays in the scene as well as the debug text in the corner 
     private void DebugMode() {
         //Debug text 
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Gravity direction :  " + Physics.gravity;
+        //GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Gravity direction :  " + Physics.gravity;
         GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
