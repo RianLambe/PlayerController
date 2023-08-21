@@ -92,10 +92,10 @@ public class PlayerControllerEditor : Editor
         # region Camera settings
         cameraSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(cameraSettingsDD, "Camera settings");
         if(cameraSettingsDD) {
-            controller.lookSpeed = EditorGUILayout.FloatField(new GUIContent("Look speed", "The speed at which the players camera rotates"), controller.lookSpeed);
+            controller.lookSpeed = EditorGUILayout.FloatField(new GUIContent("Look speed", "The speed at which the players camera rotates."), controller.lookSpeed);
 
             GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Camera angle limits", "The minimum and maxamum angle that the players camera can look up or down"));
+            EditorGUILayout.LabelField(new GUIContent("Camera angle limits", "The minimum and maxamum angle that the players camera can look up or down."));
                 GUILayout.Label("Min");
                 controller.cameraAngleLimits.x = EditorGUILayout.FloatField(controller.cameraAngleLimits.x);
                 GUILayout.Label("Max");
@@ -103,21 +103,21 @@ public class PlayerControllerEditor : Editor
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-                controller.cameraFOVCurve = EditorGUILayout.CurveField(new GUIContent("Camera F.O.V. curve", "The 'field of view' of the players camera at certain speeds, The 'X' axis being the player speed and the 'Y' axis being the FOV at the point "), controller.cameraFOVCurve);
-                GUILayout.Label(new GUIContent("Adjustment speed", "The speed that the FOV will adjust to the new target FOV for smoother transitions"));
+                controller.cameraFOVCurve = EditorGUILayout.CurveField(new GUIContent("Camera F.O.V. curve", "The 'field of view' of the players camera at certain speeds, The 'X' axis being the player speed and the 'Y' axis being the FOV at the point."), controller.cameraFOVCurve);
+                GUILayout.Label(new GUIContent("Adjustment speed", "The speed that the FOV will adjust to the new target FOV for smoother transitions."));
                 controller.cameraFOVAdjustSpeed = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
             GUILayout.EndHorizontal();
 
-            EditorGUILayout.PropertyField(rotateWithMovingPlatforms, new GUIContent("Rotate with moving platform", "If the players camera should rotate with the moving platform they are standing on"));
+            EditorGUILayout.PropertyField(rotateWithMovingPlatforms, new GUIContent("Rotate with moving platform", "If the players camera should rotate with the moving platform they are standing on."));
 
             EditorGUILayout.Space(15f);
 
             //Camera tracking settings goes here//
-            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the ditrection they are looking and use the full set of animatons"), controller.cameraStyle);
+            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the ditrection they are looking and use the full set of animatons."), controller.cameraStyle);
 
-            controller.TPRotationSpeed = EditorGUILayout.FloatField(new GUIContent("Character rotation speed", "The speed that the player model will rotate to the new rotation"), controller.TPRotationSpeed);
+            controller.TPRotationSpeed = EditorGUILayout.FloatField(new GUIContent("Character rotation speed", "The speed that the player model will rotate to the new rotation."), controller.TPRotationSpeed);
 
-            controller.cameraTarget = EditorGUILayout.ObjectField(new GUIContent("Camera Target", "If left as 'null' then nothing will happen but if there is a selected transform then the camera will remain focused on the object"), controller.cameraTarget, typeof(Transform), true) as Transform;
+            controller.cameraTarget = EditorGUILayout.ObjectField(new GUIContent("Camera Target", "If left as 'null' then nothing will happen but if there is a selected transform then the camera will remain focused on the object."), controller.cameraTarget, typeof(Transform), true) as Transform;
 
             EditorGUILayout.Space(20);
         }
@@ -156,28 +156,29 @@ public class PlayerControllerEditor : Editor
         #region Jump settings
         jumpSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(jumpSettingsDD, "Jump settings");
         if(jumpSettingsDD) {
-            controller.jumpMode = (PlayerController.jumpModes)EditorGUILayout.EnumPopup(new GUIContent("Jump mode", "Changes the style of jumping between various modes"), controller.jumpMode);
+            controller.jumpMode = (PlayerController.jumpModes)EditorGUILayout.EnumPopup(new GUIContent("Jump mode", "Changes the style of jumping between various modes."), controller.jumpMode);
 
             switch (controller.jumpMode) {
                 case PlayerController.jumpModes.Standard:
-                    EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump height", "This is the height that the player will jump. Note that due to the way the physics system works within unity the player will always reach just under this height"));
+                    EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump height", "This is the height that the player will jump. Note that due to the way the physics system works within unity the player will always reach just under this height."));
                     break;
 
                 case PlayerController.jumpModes.Charge:
-                    controller.chargeCurve = EditorGUILayout.CurveField(new GUIContent("Jump charge curve", "The height that the player will jump too depending on how long they hold the jump button. The 'X' axis represents the time and the 'Y' axis represents the height"), controller.chargeCurve);
+                    controller.chargeCurve = EditorGUILayout.CurveField(new GUIContent("Jump charge curve", "The height that the player will jump too depending on how long they hold the jump button. The 'X' axis represents the time and the 'Y' axis represents the height."), controller.chargeCurve);
                     break;
 
                 case PlayerController.jumpModes.Hold:
                     break;
             }
 
-            EditorGUILayout.PropertyField(maxJumps, new GUIContent("Max jumps", "If this number is more than one the player will be able to complete that amount of jumps before landing again"));
-            controller.coyoteTime = EditorGUILayout.FloatField(new GUIContent("Coyote time", "The amount of time after the player falls off a ledge where they can still jump"), controller.coyoteTime);
+            EditorGUILayout.PropertyField(maxJumps, new GUIContent("Max jumps", "If this number is more than one the player will be able to complete that amount of jumps before landing again. If this value is set to 1 then it will enable 'cyote time'."));
+            
+            if(controller.maxJumps == 1) controller.coyoteTime = EditorGUILayout.FloatField(new GUIContent("Coyote time", "The amount of time after the player falls off a ledge where they can still jump. Note this is only enabled when the 'Max jumps' is set to 1."), controller.coyoteTime);
 
             controller.jumpBufferMode = (PlayerController.jumpBufferModes)EditorGUILayout.EnumPopup(new GUIContent("Jump buffer", "When jump buffer is enabled, the player will be able to press the jump button before landing and it will cache the jump to be used straight away after landing."), controller.jumpBufferMode);
             
             if (controller.jumpBufferMode == jumpBufferModes.Single) {
-                controller.maxJumpBuffer = EditorGUILayout.FloatField(new GUIContent("Max jump buffer", "The maximum amount of time before landing where a jump will be added to the buffer"), controller.maxJumpBuffer);
+                controller.maxJumpBuffer = EditorGUILayout.FloatField(new GUIContent("Max jump buffer", "The maximum amount of time before landing where a jump will be added to the buffer."), controller.maxJumpBuffer);
 
             }
 

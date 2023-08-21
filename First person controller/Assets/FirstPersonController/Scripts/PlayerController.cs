@@ -56,6 +56,8 @@ public class PlayerController : MonoBehaviour
     public Vector3 groundAngleCheckOrigin;
     public float groundAngleCheckDistance = .7f;
     public float groundCheckCoolDown = .1f;
+    public LayerMask groundLayer;
+    public LayerMask dynamicGravityLayer;
 
     //Gravity variables
     float gravity = 9.81f;
@@ -64,8 +66,6 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public bool isFalling;
     public Vector3 gravityDirection;
     public Transform attractor;
-    public LayerMask groundLayer;
-    public LayerMask dynamicGravityLayer;
     [Range(0,10)]public float gravityChangeSpeed = .1f;
     public Vector2 maxGravityChange;
 
@@ -101,6 +101,7 @@ public class PlayerController : MonoBehaviour
     InputAction jump;
 
     public Vector3 heihttemp;
+    public GameObject testing;
 
     //Called on script load
     private void Awake() {
@@ -120,7 +121,7 @@ public class PlayerController : MonoBehaviour
     public void OnJump(InputAction.CallbackContext context) {
 
         //Pressed
-        if (context.performed && (numberOfJumps < maxJumps && (withinCoyoteTime || maxJumps > 1))) {
+        if (context.performed && (numberOfJumps <= maxJumps && (withinCoyoteTime || maxJumps > 1))) {
             switch (jumpMode) {
                 case jumpModes.Standard:
                     grounded = false;
@@ -170,13 +171,10 @@ public class PlayerController : MonoBehaviour
         SetGravityDirection(gravity, transform.up, false);
         localVelocty = transform.InverseTransformDirection(rb.velocity);
         localVelocty = new Vector3(localVelocty.x, 0, localVelocty.z);
-        rb.velocity = transform.TransformDirection(localVelocty);
+        //rb.velocity = transform.TransformDirection(localVelocty);
 
         //Apply velocity to player
-        //rb.velocity = new Vector3(0, Mathf.Sqrt(-2.0f * Physics.gravity.y * power), 0);
-        //rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * power);
-
-        rb.velocity = transform.up * 10;
+        rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * power);
 
         numberOfJumps++;
         heihttemp = Vector3.zero;
@@ -189,19 +187,17 @@ public class PlayerController : MonoBehaviour
 
     //Limit movement speed
     public void LimitPlayerSpeed() {
+
+        //Convert world global velocity to relative velocity and remove vertical component
         Matrix4x4 matrix4x4 = Matrix4x4.identity;
         //if (slopeAngle.sqrMagnitude != 0)
-        matrix4x4.SetTRS(Vector3.zero, Quaternion.LookRotation(-slopeAngle, gcHit.normal), Vector3.one);
-
+        matrix4x4.SetTRS(Vector3.zero, Quaternion.LookRotation(transform.forward, Physics.gravity), Vector3.one);
         Vector3 convertedVelocity = matrix4x4.inverse.MultiplyVector(rb.velocity);
         horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
 
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "HV :  " + horizontalVelocity;
-
-        //Control speed
+        //Limit speed when over threshhold
         if (horizontalVelocity.magnitude > moveSpeed) {
-            Debug.Log("Exceeding");
             rb.velocity = matrix4x4.MultiplyVector(new Vector3(limitedVal.x, convertedVelocity.y, limitedVal.z));
         }
     }
@@ -211,8 +207,6 @@ public class PlayerController : MonoBehaviour
         gravity = newGrvaityStrenght;
         if (adjustRotation) targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
         Physics.gravity = upVector.normalized * -gravity;
-
-        Debug.Log("Changed gravity");
     }
 
     //Rotates the players camera
@@ -240,10 +234,14 @@ public class PlayerController : MonoBehaviour
         //Camera rotation
         upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
         sideAngle = mousePosition.x + sideAngle;
-        playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
-        
+        playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0); 
+        //playerCamera.transform.Rotate(0, pi.actions.FindAction("Look").ReadValue<Vector2>().x, 0);
+
         //Set camera FOV
         playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
+
+        if (rotateWithMovingPlatforms) targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
+
     }
 
     //Checks to see if the player is grounded as well as the angle of the ground
@@ -252,13 +250,6 @@ public class PlayerController : MonoBehaviour
 
         //Does a check for if the player is touching the ground
         grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer + dynamicGravityLayer);
-
-        //Checks if the player is on a moving surface and attaches them to the object as a child
-        RaycastHit hit;
-        if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out hit, .1f)) {
-            transform.SetParent(hit.transform.CompareTag("Moving platform") ? hit.transform : null);
-        }
-        else transform.SetParent(null);
 
         //-----Overide gravity-----//
         if (overideGravity) {
@@ -302,7 +293,10 @@ public class PlayerController : MonoBehaviour
         }
 
         //-----Vertical checks-----//
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out gcHit, .310f)) {
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -transform.up, out gcHit, 1f)) {
+
+            //Checks if the player is on a moving surface and attaches them to the object as a child
+            transform.SetParent(gcHit.transform.CompareTag("Moving platform") ? gcHit.transform : null);
 
             //Checks if the player is standing on something that has dynaamic gravity
             if (Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
@@ -317,8 +311,8 @@ public class PlayerController : MonoBehaviour
                 SetGravityDirection(gravity, gcHit.normal, false);         
             }
         }
-
-        if (rotateWithMovingPlatforms) targetRotation = transform.rotation; //Used to store current look direction for smooth gravity changes
+        //Reset parent if player is not on moving platfrom 
+        else transform.SetParent(null);
 
         withinCoyoteTime = (Time.time - timeFell) <= coyoteTime;
 
@@ -329,11 +323,15 @@ public class PlayerController : MonoBehaviour
             }
             timeFell = Time.time;
         }
+        else {
+            SetGravityDirection(gravity, transform.up, false);
+        }
     }
 
     //Called every frame
     private void Update() {
-
+        //Used to store current look direction for smooth gravity changes
+        if (rotateWithMovingPlatforms) targetRotation = transform.rotation; 
 
         //Rotates player to target direection
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
@@ -406,6 +404,8 @@ public class PlayerController : MonoBehaviour
 
         //If enabled, all the debug options will be visable or testing purposes
         DebugMode();
+
+
     }
 
     void AnimateCharcter() {
@@ -439,6 +439,7 @@ public class PlayerController : MonoBehaviour
 
         //RotatePlayer();
         MovePlayer();
+
 
         if (jumpMode == jumpModes.Hold && pi.actions.FindAction("Jump").IsPressed()) ExecuteJump(jumpHeight * (Time.time - jumpHoldTime));
     }
