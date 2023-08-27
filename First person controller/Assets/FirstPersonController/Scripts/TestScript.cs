@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class TestScript : MonoBehaviour
@@ -15,6 +16,6 @@ public class TestScript : MonoBehaviour
     {
         Debug.DrawRay(transform.position, transform.up * 10f, Color.cyan);
 
-
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + transform.rotation.eulerAngles;
     }
 }

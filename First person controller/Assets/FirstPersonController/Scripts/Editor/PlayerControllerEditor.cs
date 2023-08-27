@@ -236,7 +236,8 @@ public class PlayerControllerEditor : Editor
         if (objectAssignmentDD) {
             //controller.test = EditorGUILayout.ObjectField("Camera Target", controller.test, typeof(Transform), true) as Transform;
             controller.playerObject = EditorGUILayout.ObjectField("Player object", controller.playerObject, typeof(Transform), true) as Transform;
-            controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
+            //controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
+            controller.cameraPivot = EditorGUILayout.ObjectField("Player camera", controller.cameraPivot, typeof(GameObject), true) as GameObject;
 
 
             EditorGUILayout.Space(20);
