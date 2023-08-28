@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 2160.8528, g: 2265.0881, b: 3288.399, a: 1}
+  m_IndirectSpecularColor: {r: 2159.841, g: 2264.2268, b: 3287.6528, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1660,10 +1660,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1117684063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_SizeDelta: {x: 777.99994, y: 40}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &407053584
 MonoBehaviour:
@@ -3942,10 +3942,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1117684063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -120}
+  m_SizeDelta: {x: 777.99994, y: 40}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1452217522
 MonoBehaviour:
@@ -4076,10 +4076,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1117684063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -80}
+  m_SizeDelta: {x: 777.99994, y: 40}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1463628570
 MonoBehaviour:
@@ -4987,7 +4987,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 34865980}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 80.62852
+    FieldOfView: 80.58412
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -5932,7 +5932,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 80.62852
+  field of view: 80.58412
   orthographic: 0
   orthographic size: 10
   m_Depth: 0
@@ -6302,10 +6302,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1117684063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -40}
+  m_SizeDelta: {x: 777.99994, y: 40}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &2032935959
 MonoBehaviour:

@@ -1,9 +1,11 @@
 using Cinemachine;
 using System;
+using System.Numerics;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Processors;
 using Cursor = UnityEngine.Cursor;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 using Quaternion = UnityEngine.Quaternion;
@@ -103,10 +105,15 @@ public class PlayerController : MonoBehaviour
     public GameObject testingTransform;
     Quaternion savedRotation;
     Vector3 savedForward;
+    Vector3 savedUp;
     Transform platform;
     public Vector3 extraRot;
     Quaternion test;
 
+    Quaternion deltaRot = Quaternion.identity;
+    Vector3 deltaForward = Vector3.zero;
+
+    public GameObject testParent;
 
     //Called on script load
     private void Awake() {
@@ -205,11 +212,10 @@ public class PlayerController : MonoBehaviour
     //Sets the direction of the gravity
     public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector, bool adjustRotation) {
         gravity = newGrvaityStrenght;
-        if (adjustRotation) {
-            targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
-            testingTransform.transform.rotation = targetRotation;
-            Debug.Log(targetRotation.eulerAngles);
-        }
+        //if (adjustRotation) {
+        //    targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+        //    testingTransform.transform.rotation = targetRotation;
+        //}
         Physics.gravity = upVector.normalized * -gravity;
     }
 
@@ -288,6 +294,10 @@ public class PlayerController : MonoBehaviour
             if (gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
         
                 Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.cyan, 1f);
+
+                targetRotation = Quaternion.FromToRotation(transform.up, gcHit.normal) * transform.rotation;
+                testingTransform.transform.rotation = targetRotation;
+
                 SetGravityDirection(9.81f, gcHit.normal, true);
         
                 //transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, gravityChangeSpeed);
@@ -303,9 +313,15 @@ public class PlayerController : MonoBehaviour
 
             //Checks if the player is standing on something that has dynamic gravity
             if (Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
+                targetRotation = Quaternion.FromToRotation(transform.up, gcHit.normal) * transform.rotation;
+                testingTransform.transform.rotation = targetRotation;
+
                 slopeAngle = moveDirection;
 
                 ////if (Quaternion.Angle(transform.rotation, targetRotation) < .1f)
+                ///
+
+
                 SetGravityDirection(9.81f, gcHit.normal, true);
 
 
@@ -316,6 +332,9 @@ public class PlayerController : MonoBehaviour
             }
             //Checks if the player is standing on a slope 
             else if (grounded) {
+                targetRotation = Quaternion.FromToRotation(transform.up, gcHit.normal) * transform.rotation;
+                testingTransform.transform.rotation = targetRotation;
+
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
                 SetGravityDirection(gravity, gcHit.normal, false);         
             }
@@ -341,63 +360,13 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void LateUpdate() {
-        Quaternion deltaRot = Quaternion.identity;
-        Vector3 deltaForward = Vector3.zero;
-        if (transform.parent != null) {
-            //Quaternion aQuaternion = transform.parent.rotation;
-            //Quaternion bQuaternion = savedRotation;
-            deltaRot = transform.rotation * Quaternion.Inverse(savedRotation);
-            deltaForward = savedForward - transform.forward;
-            test *= deltaRot;
-        }
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + test;
-    
-        //GroundChecks();
-        Quaternion newRot = targetRotation;
-        if (transform.parent != null) newRot = targetRotation;
-        transform.rotation = Quaternion.Lerp(transform.rotation, newRot, gravityChangeSpeed * Time.deltaTime);
-        transform.rotation *= deltaRot;
-        testingTransform.transform.rotation *= deltaRot;
-
-
-    
-    }
-
     //Called every frame
     private void Update() {
-        //Used to store current look direction for smooth gravity changes
-        savedForward = transform.forward;
-        savedRotation = transform.rotation;
-
+        //Checks both if the player is grounded and if there is a wall in front of them 
         GroundChecks();
 
-        //transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
-        //if (platform != null) GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + deltaRot + " : " + transform.parent.rotation;
-        //if(transform.parent != null) savedRotation = transform.parent.rotation * Quaternion.Inverse(savedRotation);
-
-        //if (transform.parent != null) targetRotation = transform.rotation; 
-
-        //GroundChecks();
-
-        //Rotates player to target direection
-        //transform.rotation = targetRotation;
-        //transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
-
-        //if (transform.parent != null) targetRotation *= savedRotation;
-        //targetRotation *= deltaRot;
-        //if (transform.parent != null) targetRotation *= transform.parent.rotation;
-        //newRot = targetRotation * RotateAround(transform, new Vector3(0,0,0), Quaternion.Euler(extraRot));
-        //transform.rotation = Quaternion.Lerp(transform.rotation, newRot, gravityChangeSpeed * Time.deltaTime);
-
-        //if (transform.parent != null) transform.rotation *= deltaRot;
-
-        //transform.rotation *= Quaternion.Euler(new Vector3(0,,0));
-
-
-
-
-
+        //Smoothly rotate the player to the target rotation
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
 
         //Sets players movment speed 
         sprinting = pi.actions.FindAction("Sprint").IsPressed();
@@ -422,7 +391,7 @@ public class PlayerController : MonoBehaviour
         //Does ground checks if the player has been airborn for a certain threshold
         //GroundChecks();
 
-        moveSpeed = grounded ? 0 : moveSpeed; // temp code, change for more robust 
+        //moveSpeed = grounded ? 0 : moveSpeed; // temp code, change for more robust 
 
         //Sets player drag depending on weather they are grounded or not
         if (grounded && ((Time.time - timeSinceFall) > .2f)) {
@@ -482,7 +451,6 @@ public class PlayerController : MonoBehaviour
     //Called every fixed framerate frame
     private void FixedUpdate() {
         MovePlayer();
-        Debug.Log("This is" + targetRotation.eulerAngles);
 
         if (jumpMode == jumpModes.Hold && pi.actions.FindAction("Jump").IsPressed()) ExecuteJump(jumpHeight * (Time.time - jumpHoldTime));
     }
@@ -490,7 +458,7 @@ public class PlayerController : MonoBehaviour
     //Draws debug rays in the scene as well as the debug text in the corner 
     private void DebugMode() {
         //Debug text 
-        //GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + targetRotation.eulerAngles;
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + targetRotation.eulerAngles;
         GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
