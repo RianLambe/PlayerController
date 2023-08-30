@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Moving platform
+  - Sounds/Default
+  - Sounds/Metal
   layers:
   - Default
   - TransparentFX

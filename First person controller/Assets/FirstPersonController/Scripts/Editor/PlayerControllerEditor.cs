@@ -1,9 +1,12 @@
 using Cinemachine;
 using Cinemachine.Editor;
+using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEditor;
+using UnityEditor.Rendering.HighDefinition;
 using UnityEditorInternal;
 using UnityEngine;
 using static PlayerController;
@@ -18,6 +21,7 @@ public class PlayerControllerEditor : Editor
     //SerializedProperty cameraOffset;
     SerializedProperty cameraFovCurve;
     SerializedProperty rotateWithMovingPlatforms;
+    SerializedProperty useHeadBobCurves;
 
     //Movement settings
     SerializedProperty walkSpeed;
@@ -37,8 +41,9 @@ public class PlayerControllerEditor : Editor
 
     SerializedProperty attractor;
 
-
-
+    //audio
+    SerializedProperty audio;
+    SerializedProperty enableDefaultSounds;
 
     //Foldout groups
     bool cameraSettingsDD = false;
@@ -47,6 +52,7 @@ public class PlayerControllerEditor : Editor
     bool gravitySettingsDD = false;
     bool groundChecksDD = false;
     bool objectAssignmentDD = false;
+    bool AudioSettingsDD = false;
 
 
 
@@ -57,6 +63,7 @@ public class PlayerControllerEditor : Editor
         //cameraOffset = serializedObject.FindProperty("cameraOffset");
         cameraFovCurve = serializedObject.FindProperty("cameraFovCurve");
         rotateWithMovingPlatforms = serializedObject.FindProperty("rotateWithMovingPlatforms");
+        useHeadBobCurves = serializedObject.FindProperty("useHeadBobCurves");
 
 
         //Walk settings
@@ -76,6 +83,10 @@ public class PlayerControllerEditor : Editor
         groundAngleCheckDistance = serializedObject.FindProperty("groundAngleCheckDistance");
 
         attractor = serializedObject.FindProperty("attractor");
+
+        audio = serializedObject.FindProperty("footstepAudioClips");
+        enableDefaultSounds = serializedObject.FindProperty("enableDefaultSounds");
+
 
     }
 
@@ -109,6 +120,21 @@ public class PlayerControllerEditor : Editor
             GUILayout.EndHorizontal();
 
             EditorGUILayout.PropertyField(rotateWithMovingPlatforms, new GUIContent("Rotate with moving platform", "If the players camera should rotate with the moving platform they are standing on."));
+
+            EditorGUILayout.Space(15f);
+
+            EditorGUILayout.PropertyField(useHeadBobCurves, new GUIContent("Use head bob curves", "Whether or not the head bob should use curves as its source for the frequency and amplitude"));
+            if (controller.useHeadBobCurves) {
+                controller.headBobFrequencyCurve = EditorGUILayout.CurveField(new GUIContent("Head bob frequency", "The speed at which the camera will oscillate. The 'X' axis being the speed of the player and the 'Y' axis being the frequency."), controller.headBobFrequencyCurve);
+                controller.headBobAmplitudeCurve = EditorGUILayout.CurveField(new GUIContent("Head bob amplitude", "The strenght at which the camera will oscillate. The 'X' axis being the speed of the player and the 'Y' axis being the amplitude."), controller.headBobAmplitudeCurve);
+            }
+            else {
+                controller.headBobFrequency = EditorGUILayout.FloatField(new GUIContent("Head bob frequency", "The speed at which the camera will oscillate."), controller.headBobFrequency);
+                controller.headBobAmplitude = EditorGUILayout.FloatField(new GUIContent("Head bob amplitude", "The strenght at which the camera will oscillate."), controller.headBobAmplitude);
+            }
+
+
+
 
             EditorGUILayout.Space(15f);
 
@@ -231,6 +257,21 @@ public class PlayerControllerEditor : Editor
         EditorGUILayout.EndFoldoutHeaderGroup();
         #endregion
 
+        #region Audio settings
+        AudioSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(AudioSettingsDD, "Audio settings");
+        EditorGUILayout.EndFoldoutHeaderGroup();
+
+        if(AudioSettingsDD) {
+            controller.walkStepTime = EditorGUILayout.FloatField(new GUIContent("Walk step time", "The amount of time between each sound footstep at walking speed. The frequecy on the footsteps will increase as the players speed increases."), controller.walkStepTime);
+            EditorGUILayout.PropertyField(enableDefaultSounds, new GUIContent("Enable default sounds", "If the player is standing on an object with no tag match, The first set os sounds in the list will be used."));
+
+            EditorGUILayout.PropertyField(audio);
+
+            EditorGUILayout.Space(20);
+        }
+        #endregion
+
+
         #region Object assignment
         objectAssignmentDD = EditorGUILayout.BeginFoldoutHeaderGroup(objectAssignmentDD, "Object assignment");
         if (objectAssignmentDD) {
@@ -248,3 +289,6 @@ public class PlayerControllerEditor : Editor
         serializedObject.ApplyModifiedProperties();
     }
 }
+
+
+
