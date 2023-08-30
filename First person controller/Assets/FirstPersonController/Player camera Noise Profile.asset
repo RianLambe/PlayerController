@@ -25,4 +25,16 @@ MonoBehaviour:
       Frequency: 0
       Amplitude: 0
       Constant: 0
-  OrientationNoise: []
+  OrientationNoise:
+  - X:
+      Frequency: 1
+      Amplitude: 25
+      Constant: 0
+    Y:
+      Frequency: 1
+      Amplitude: 20
+      Constant: 0
+    Z:
+      Frequency: 1
+      Amplitude: 20
+      Constant: 0

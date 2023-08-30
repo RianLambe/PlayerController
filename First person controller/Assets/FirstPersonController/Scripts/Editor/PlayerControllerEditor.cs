@@ -106,7 +106,7 @@ public class PlayerControllerEditor : Editor
             controller.lookSpeed = EditorGUILayout.FloatField(new GUIContent("Look speed", "The speed at which the players camera rotates."), controller.lookSpeed);
 
             GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Camera angle limits", "The minimum and maxamum angle that the players camera can look up or down."));
+            EditorGUILayout.LabelField(new GUIContent("Camera angle limits", "The minimum and maximum angle that the players camera can look up or down."));
                 GUILayout.Label("Min");
                 controller.cameraAngleLimits.x = EditorGUILayout.FloatField(controller.cameraAngleLimits.x);
                 GUILayout.Label("Max");
@@ -119,11 +119,9 @@ public class PlayerControllerEditor : Editor
                 controller.cameraFOVAdjustSpeed = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
             GUILayout.EndHorizontal();
 
-            EditorGUILayout.PropertyField(rotateWithMovingPlatforms, new GUIContent("Rotate with moving platform", "If the players camera should rotate with the moving platform they are standing on."));
-
             EditorGUILayout.Space(15f);
 
-            EditorGUILayout.PropertyField(useHeadBobCurves, new GUIContent("Use head bob curves", "Whether or not the head bob should use curves as its source for the frequency and amplitude"));
+            EditorGUILayout.PropertyField(useHeadBobCurves, new GUIContent("Use head bob curves", "Whether or not the head bob should use curves as its source for the frequency and amplitude."));
             if (controller.useHeadBobCurves) {
                 controller.headBobFrequencyCurve = EditorGUILayout.CurveField(new GUIContent("Head bob frequency", "The speed at which the camera will oscillate. The 'X' axis being the speed of the player and the 'Y' axis being the frequency."), controller.headBobFrequencyCurve);
                 controller.headBobAmplitudeCurve = EditorGUILayout.CurveField(new GUIContent("Head bob amplitude", "The strenght at which the camera will oscillate. The 'X' axis being the speed of the player and the 'Y' axis being the amplitude."), controller.headBobAmplitudeCurve);
@@ -133,13 +131,10 @@ public class PlayerControllerEditor : Editor
                 controller.headBobAmplitude = EditorGUILayout.FloatField(new GUIContent("Head bob amplitude", "The strenght at which the camera will oscillate."), controller.headBobAmplitude);
             }
 
-
-
-
             EditorGUILayout.Space(15f);
 
             //Camera tracking settings goes here//
-            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the ditrection they are looking and use the full set of animatons."), controller.cameraStyle);
+            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the direction they are looking and use the full set of animations."), controller.cameraStyle);
 
             controller.TPRotationSpeed = EditorGUILayout.FloatField(new GUIContent("Character rotation speed", "The speed that the player model will rotate to the new rotation."), controller.TPRotationSpeed);
 
@@ -194,6 +189,7 @@ public class PlayerControllerEditor : Editor
                     break;
 
                 case PlayerController.jumpModes.Hold:
+                    EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump power", "This is the force applied to the player every frame."));
                     break;
             }
 
@@ -278,7 +274,7 @@ public class PlayerControllerEditor : Editor
             //controller.test = EditorGUILayout.ObjectField("Camera Target", controller.test, typeof(Transform), true) as Transform;
             controller.playerObject = EditorGUILayout.ObjectField("Player object", controller.playerObject, typeof(Transform), true) as Transform;
             //controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
-            controller.cameraPivot = EditorGUILayout.ObjectField("Player camera", controller.cameraPivot, typeof(GameObject), true) as GameObject;
+            controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
 
 
             EditorGUILayout.Space(20);

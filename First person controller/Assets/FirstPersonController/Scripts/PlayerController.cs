@@ -1,18 +1,9 @@
 using Cinemachine;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Numerics;
 using TMPro;
-using Unity.VisualScripting;
-using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Animations;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Processors;
-using UnityEngine.Rendering.HighDefinition;
-using static UnityEditor.PlayerSettings;
 using Cursor = UnityEngine.Cursor;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 using Quaternion = UnityEngine.Quaternion;
@@ -27,18 +18,18 @@ public class PlayerController : MonoBehaviour
     public Vector2 cameraAngleLimits = new Vector2(-80, 80);
     public Vector3 cameraOffset;
     public AnimationCurve cameraFOVCurve;
+    Vector3 cameraStartingPos;
     public float cameraFOVAdjustSpeed = .1f;
-    public bool rotateWithMovingPlatforms;
-    public enum cameraStyles {Standard, Locked}
-    public cameraStyles cameraStyle;
-    public float TPRotationSpeed = 500;
-    public Transform cameraTarget;
-    CinemachineBasicMultiChannelPerlin cameraShake;
     public bool useHeadBobCurves;
     public float headBobFrequency;
     public float headBobAmplitude;
     public AnimationCurve headBobFrequencyCurve;
     public AnimationCurve headBobAmplitudeCurve;
+    public enum cameraStyles {Standard, Locked}
+    public cameraStyles cameraStyle;
+    public float TPRotationSpeed = 500;
+    public Transform cameraTarget;
+    public float cameraArmLenght = 2f;
 
     //Moving variables
     public float walkSpeed = 5;
@@ -61,7 +52,7 @@ public class PlayerController : MonoBehaviour
     public jumpBufferModes jumpBufferMode;
     public float maxJumpBuffer;
     float jumpBufferTime;
-    bool perfromJump;
+    bool perfromJump = false;
     public enum jumpModes {Standard, Charge, Hold}
     public jumpModes jumpMode;
     public AnimationCurve chargeCurve;
@@ -96,7 +87,6 @@ public class PlayerController : MonoBehaviour
     //Object assignment
     Rigidbody rb;
     public Transform playerObject;
-    public GameObject cameraPivot;
     public CinemachineVirtualCamera playerCamera;
 
     //Input variables
@@ -124,27 +114,25 @@ public class PlayerController : MonoBehaviour
     Animator animator;
 
     public GameObject testingTransform;
-    Vector3 startPos;
 
     //Called on script load
     private void Awake() {
         //Get references to GaemObjects 
-        playerCamera = cameraPivot.GetComponentInChildren<CinemachineVirtualCamera>();
+        playerCamera = playerCamera.GetComponentInChildren<CinemachineVirtualCamera>();
         rb = GetComponent<Rigidbody>();
         pi = GetComponent<PlayerInput>();
         animator = playerObject == null ? null :playerObject.GetComponent<Animator>();
+        cameraStartingPos = playerCamera.transform.localPosition;
 
         //Set cursor lock mode
         Cursor.lockState = CursorLockMode.Locked;
-        startPos = cameraPivot.transform.localPosition;
-        cameraShake = playerCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
     }
 
     //Makes the player jump
     public void OnJump(InputAction.CallbackContext context) {
 
         //Pressed
-        if (context.performed && (numberOfJumps <= maxJumps && (withinCoyoteTime || maxJumps > 1))) {
+        if (context.performed && numberOfJumps <= maxJumps && (withinCoyoteTime || maxJumps > 1)) {
             switch (jumpMode) {
                 case jumpModes.Standard:
                     grounded = false;
@@ -154,6 +142,8 @@ public class PlayerController : MonoBehaviour
 
                 case jumpModes.Charge:
                     jumpHoldTime = Time.time;
+                    Debug.Log("jpht = " + jumpHoldTime);
+
                     if (animator != null)  {
                         animator.SetFloat("jumpCharge", 0);
                         animator.SetBool("chargingJump", true);
@@ -180,6 +170,7 @@ public class PlayerController : MonoBehaviour
                 //if (numberOfJumps < maxJumps) ExecuteJump(jumpHeight * chargeCurve.Evaluate(jumpHoldTime));
 
                 playerObject.GetComponent<Animator>().SetBool("chargingJump", false);
+                Debug.Log(Time.time - jumpHoldTime);
                 ExecuteJump(chargeCurve.Evaluate(Time.time - jumpHoldTime));
             }
         }
@@ -224,22 +215,14 @@ public class PlayerController : MonoBehaviour
 
     //Sets the direction of the gravity
     public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector, bool adjustRotation) {
-        //targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
-        //testingTransform.transform.rotation = targetRotation;
-
         if (adjustRotation) {
             targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
-            testingTransform.transform.rotation = targetRotation;
         }
 
+        testingTransform.transform.rotation = targetRotation;
         
-
         gravity = newGrvaityStrenght;
-        Physics.gravity = upVector.normalized * -gravity;
-        //Physics.gravity = testingTransform.transform.up * -gravity;
-        //targetRotation = transform.rotation;
-
-
+        Physics.gravity = upVector.normalized * -newGrvaityStrenght;
     }
 
     //Rotates the players camera
@@ -253,11 +236,10 @@ public class PlayerController : MonoBehaviour
                     break;
 
                 case cameraStyles.Locked:
-                    angle = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraPivot.transform.forward, transform.up), transform.up);
+                    angle = Quaternion.LookRotation(Vector3.ProjectOnPlane(playerCamera.transform.forward, transform.up), transform.up);
                     break;
             }
         }
-        ///////playerCamera.LookAt = cameraTarget;
 
         //Rotate player
         if (movementInput != Vector2.zero && playerObject != null) {
@@ -265,12 +247,25 @@ public class PlayerController : MonoBehaviour
         }
 
         //Camera rotation
-        upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
-        sideAngle = mousePosition.x + sideAngle;
-        cameraPivot.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0); 
+        if(cameraTarget == null) {
+            upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
+            sideAngle = mousePosition.x + sideAngle;
+            playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
+        }
+        else {
+            playerCamera.transform.LookAt(cameraTarget);
+        }
 
         //Set camera FOV
         playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
+
+        RaycastHit cameraCollision;
+        if (Physics.Raycast(transform.TransformPoint(cameraStartingPos), -playerCamera.transform.forward, out cameraCollision, cameraArmLenght)) {
+            playerCamera.transform.position = cameraCollision.point;
+        }
+        else {
+            playerCamera.transform.position = transform.TransformPoint(cameraStartingPos) - playerCamera.transform.forward * cameraArmLenght;
+        }
 
         if (!grounded) return;
         if (useHeadBobCurves) {
@@ -286,9 +281,11 @@ public class PlayerController : MonoBehaviour
     //Checks to see if the player is grounded as well as the angle of the ground
     void GroundChecks() {
         float hitAngle;
+        targetRotation = transform.rotation;
+        string hitLayer;
 
         //Does a check for if the player is touching the ground
-        grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer + dynamicGravityLayer);
+        grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer);
 
         //-----Overide gravity-----//
         if (overideGravity) {
@@ -297,83 +294,80 @@ public class PlayerController : MonoBehaviour
 
         //-----Attractor-----//
         else if (attractor != null) {
-            SetGravityDirection(9.81f, (transform.position - attractor.transform.position).normalized, true);
+            //SetGravityDirection(gravity, (transform.position - attractor.transform.position).normalized, true);
+            SetGravityDirection(gravity, (transform.position - attractor.transform.position).normalized, true);
+
+            Debug.Log("Attractor");
         }
 
-        //-----Horizontal checks-----//
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, dynamicGravityLayer + groundLayer)) {    
+        ////-----Horizontal checks-----//
+        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, groundLayer)) {    
             hitAngle = Vector3.Angle(gcHit.normal, transform.up);
+        
+            hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
         
             //Checks if the hit objects angle relative to the player is less than the maximum to be consiodered a step
             RaycastHit stepHit;
             if (hitAngle > maxStepAngle) {
                 if (!Physics.Raycast(transform.TransformPoint(new Vector3(groundAngleCheckOrigin.x, groundAngleCheckOrigin.x + maxStepHeight, groundAngleCheckOrigin.z)), moveDirection, out stepHit, groundAngleCheckDistance + .2f)) {                   
                     rb.position += transform.up * stepSmoothing * Time.deltaTime;
-                    //grounded = true;    
+                    return;
                 }
                 else {
-                    //grounded = true;            
                     rb.velocity = transform.TransformVector(new Vector3(rb.velocity.x, 0, rb.velocity.y));
                 }
             }
             else {
-                //grounded = true;
-            
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
                 SetGravityDirection(9.81f, gcHit.normal, false);
             }
         
             //Checks if the objects the player is walking into is on the "Dynamic gravity" layer meaning the player will stick to it
-            if (gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
-        
-        
-                SetGravityDirection(9.81f, gcHit.normal, true);
+            if (hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") {
+                SetGravityDirection(gravity, gcHit.normal, true);
             }
         }
-
+        
         //-----Vertical checks-----//
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -testingTransform.transform.up, out gcHit, .3f)) {
-
-            //Checks if the player is on a moving surface and attaches them to the object as a child
-            transform.SetParent(gcHit.transform.CompareTag("Moving platform") ? gcHit.transform : null, true);
-
+        
+            hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
+        
+            //Checks if the player is on a moving surface and attaches them to the object as a child         
+            transform.SetParent(hitLayer == "Moving platform" || hitLayer == "Dynamic gravity + Moving platform" ? gcHit.transform : null, true);
+        
             //Checks if the player is standing on something that has dynamic gravity
-            //if (Vector3.Angle(gcHit.normal, transform.up) >= maxGravityChange.x && Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
-
-            if (Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && gcHit.transform.gameObject.layer == LayerMask.NameToLayer("Dynamic gravity")) {
+            if (Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") {
                 slopeAngle = moveDirection;
-
-                SetGravityDirection(9.81f, gcHit.normal, true);
-                Debug.Log("Dynamic gravity");
+        
+                SetGravityDirection(gravity, gcHit.normal, true);
             }
             //Checks if the player is standing on a slope 
             else if (grounded) {
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
-                Debug.Log("Slope");
-
+        
                 SetGravityDirection(gravity, gcHit.normal, false);         
             }
         }
-
+        
         //Reset parent if player is not on moving platfrom 
         else {
             transform.SetParent(null);
         }
-
-        withinCoyoteTime = (Time.time - timeFell) <= coyoteTime;
-
+        
+        //Deal with jump buffer and coyote time
         if (grounded) {
-            if (Time.time - jumpBufferTime <= maxJumpBuffer && perfromJump) {
+            if (Time.time - jumpBufferTime <= maxJumpBuffer && perfromJump || jumpBufferMode == jumpBufferModes.Continuous && perfromJump) {
                 ExecuteJump(jumpHeight);
                 if (jumpBufferMode == jumpBufferModes.Single) perfromJump = false;
             }
             timeFell = Time.time;
         }
         else {
-            SetGravityDirection(gravity, transform.up, true);
+            SetGravityDirection(gravity, -Physics.gravity, true);
         }
 
-        //if (rotateWithMovingPlatforms) targetRotation = transform.rotation;
+        withinCoyoteTime = (Time.time - timeFell) <= coyoteTime;
     }
 
     //Plays the footstep sounds
@@ -399,11 +393,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
-    private void HeadBob() {
-
-    }
-
     //Called every frame
     private void Update() {
         //Sets players movment speed 
@@ -415,19 +404,20 @@ public class PlayerController : MonoBehaviour
         mousePosition.y = Mathf.Clamp(mousePosition.y, cameraAngleLimits.x, cameraAngleLimits.y);
 
         movementInput = pi.actions.FindAction("Move").ReadValue<Vector2>(); //Movement inputs, Taking into acount camera direction
-        moveDirection = cameraPivot.transform.forward * movementInput.y + cameraPivot.transform.right * movementInput.x;
+        moveDirection = playerCamera.transform.forward * movementInput.y + playerCamera.transform.right * movementInput.x;
         moveDirection = Vector3.ProjectOnPlane(moveDirection, transform.up).normalized;
 
         if (movementInput != Vector2.zero) {
             inputCache = movementInput; //The saved direction from the last time the player moved
             cachedSlopeAngle = slopeAngle;
         }
-        cachedMoveDirection = cameraPivot.transform.forward * inputCache.y + cameraPivot.transform.right * inputCache.x;
+        cachedMoveDirection = playerCamera.transform.forward * inputCache.y + playerCamera.transform.right * inputCache.x;
         cachedMoveDirection = Vector3.ProjectOnPlane(cachedMoveDirection, transform.up).normalized;
         slopeAngle = moveDirection;
 
 
         //Checks both if the player is grounded and if there is a wall in front of them 
+
         GroundChecks();
 
         //Smoothly rotate the player to the target rotation
@@ -449,6 +439,7 @@ public class PlayerController : MonoBehaviour
         localVelocty = transform.InverseTransformDirection(rb.velocity);
 
         //Makes sure the player does not exceed a certain speed
+        moveSpeed *= movementInput.magnitude;
         LimitPlayerSpeed();
 
         //Rotates the player camera
@@ -459,8 +450,6 @@ public class PlayerController : MonoBehaviour
 
         //Handles playing all the footstep sounds
         FootstepSounds();
-
-        HeadBob();
         
         //If enabled, all the debug options will be visable or testing purposes
         DebugMode();
@@ -500,7 +489,7 @@ public class PlayerController : MonoBehaviour
     //Draws debug rays in the scene as well as the debug text in the corner 
     private void DebugMode() {
         //Debug text 
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + targetRotation.eulerAngles;
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + perfromJump;
         GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
