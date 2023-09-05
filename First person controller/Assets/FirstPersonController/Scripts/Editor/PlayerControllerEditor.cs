@@ -16,18 +16,10 @@ using static UnityEngine.UI.Image;
 public class PlayerControllerEditor : Editor
 {
     //Camera settings
-    SerializedProperty lookSpeed;
-    SerializedProperty cameraAngleLimits;
-    //SerializedProperty cameraOffset;
-    SerializedProperty cameraFovCurve;
-    SerializedProperty rotateWithMovingPlatforms;
     SerializedProperty useHeadBobCurves;
 
     //Movement settings
-    SerializedProperty walkSpeed;
-    SerializedProperty sprintSpeed;
-    SerializedProperty acceleration;
-    SerializedProperty playerDrag;
+    SerializedProperty dynamicCrouch;
 
     //Jump settings
     SerializedProperty jumpHeight;
@@ -42,8 +34,11 @@ public class PlayerControllerEditor : Editor
     SerializedProperty attractor;
 
     //audio
-    SerializedProperty audio;
     SerializedProperty enableDefaultSounds;
+    SerializedProperty _footstepAudioClips;
+    SerializedProperty _jumpingAudioClips;
+    SerializedProperty _landingAudioClips;
+
 
     //Foldout groups
     bool cameraSettingsDD = false;
@@ -58,19 +53,11 @@ public class PlayerControllerEditor : Editor
 
     private void OnEnable() {
         //Camera settings
-        lookSpeed = serializedObject.FindProperty("lookSpeed");
-        cameraAngleLimits = serializedObject.FindProperty("cameraAngleLimits");
-        //cameraOffset = serializedObject.FindProperty("cameraOffset");
-        cameraFovCurve = serializedObject.FindProperty("cameraFovCurve");
-        rotateWithMovingPlatforms = serializedObject.FindProperty("rotateWithMovingPlatforms");
         useHeadBobCurves = serializedObject.FindProperty("useHeadBobCurves");
 
+        //Movement
+        dynamicCrouch = serializedObject.FindProperty("dynamicCrouch");
 
-        //Walk settings
-        walkSpeed = serializedObject.FindProperty("walkSpeed");
-        sprintSpeed = serializedObject.FindProperty("sprintSpeed");
-        acceleration = serializedObject.FindProperty("acceleration");
-        playerDrag = serializedObject.FindProperty("playerDrag");
 
         //Jump setttings
         jumpHeight = serializedObject.FindProperty("jumpHeight");
@@ -84,7 +71,10 @@ public class PlayerControllerEditor : Editor
 
         attractor = serializedObject.FindProperty("attractor");
 
-        audio = serializedObject.FindProperty("footstepAudioClips");
+        _footstepAudioClips = serializedObject.FindProperty("footstepAudioClips");
+        _jumpingAudioClips = serializedObject.FindProperty("jumpingAudioClips");
+        _landingAudioClips = serializedObject.FindProperty("landingAudioClips");
+
         enableDefaultSounds = serializedObject.FindProperty("enableDefaultSounds");
 
 
@@ -92,17 +82,28 @@ public class PlayerControllerEditor : Editor
 
     public override void OnInspectorGUI() {
         //Base inspectotor 
-        base.OnInspectorGUI();  
-        EditorGUILayout.Space(20);
+        //base.OnInspectorGUI();  
+        //EditorGUILayout.Space(20);
 
         serializedObject.Update();
 
         PlayerController controller = (PlayerController)target;
+        var catagoryStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter , fontSize = 15};
+        catagoryStyle.richText = true;
+
+        GUIStyle headerStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 25 };
+        GUILayout.Label("Character controller", headerStyle);
+
         Undo.RecordObject(controller, ("Changed player controller variable"));
+
 
         # region Camera settings
         cameraSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(cameraSettingsDD, "Camera settings");
-        if(cameraSettingsDD) {
+        if (cameraSettingsDD) {
+
+            
+            EditorGUILayout.LabelField("General camera settings", catagoryStyle);
+
             controller.lookSpeed = EditorGUILayout.FloatField(new GUIContent("Look speed", "The speed at which the players camera rotates."), controller.lookSpeed);
 
             GUILayout.BeginHorizontal();
@@ -121,6 +122,7 @@ public class PlayerControllerEditor : Editor
 
             EditorGUILayout.Space(15f);
 
+            EditorGUILayout.LabelField("Head bobbing", catagoryStyle);
             EditorGUILayout.PropertyField(useHeadBobCurves, new GUIContent("Use head bob curves", "Whether or not the head bob should use curves as its source for the frequency and amplitude."));
             if (controller.useHeadBobCurves) {
                 controller.headBobFrequencyCurve = EditorGUILayout.CurveField(new GUIContent("Head bob frequency", "The speed at which the camera will oscillate. The 'X' axis being the speed of the player and the 'Y' axis being the frequency."), controller.headBobFrequencyCurve);
@@ -133,12 +135,12 @@ public class PlayerControllerEditor : Editor
 
             EditorGUILayout.Space(15f);
 
-            //Camera tracking settings goes here//
+            EditorGUILayout.LabelField("Rotation modes", catagoryStyle);
             controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the direction they are looking and use the full set of animations."), controller.cameraStyle);
-
             controller.TPRotationSpeed = EditorGUILayout.FloatField(new GUIContent("Character rotation speed", "The speed that the player model will rotate to the new rotation."), controller.TPRotationSpeed);
-
             controller.cameraTarget = EditorGUILayout.ObjectField(new GUIContent("Camera Target", "If left as 'null' then nothing will happen but if there is a selected transform then the camera will remain focused on the object."), controller.cameraTarget, typeof(Transform), true) as Transform;
+            
+
 
             EditorGUILayout.Space(20);
         }
@@ -148,26 +150,33 @@ public class PlayerControllerEditor : Editor
         #region Movement settings
         movmentSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(movmentSettingsDD, "Movment settings"); 
         if (movmentSettingsDD) {
-            GUILayout.BeginHorizontal();
-                GUILayout.Label("Crouch speed");
-                controller.walkSpeed = EditorGUILayout.FloatField(controller.walkSpeed);
-                GUILayout.Label("Walk speed");
-                controller.walkSpeed = EditorGUILayout.FloatField(controller.walkSpeed);
-                GUILayout.Label("Sprint speed");
-                controller.sprintSpeed = EditorGUILayout.FloatField(controller.sprintSpeed);
-            GUILayout.EndHorizontal();
+            EditorGUILayout.LabelField("Speeds", catagoryStyle);
+            controller.walkSpeed = EditorGUILayout.FloatField(new GUIContent("Walk speed", "The speed the player will walk."), controller.walkSpeed);
+            controller.sprintSpeed = EditorGUILayout.FloatField(new GUIContent("Sprint speed", "The speed the player will move while sprinting."), controller.sprintSpeed);
+            controller.walkCrouchSpeed = EditorGUILayout.FloatField(new GUIContent("Crouch speed", "The speed the player will move while crouching."), controller.walkCrouchSpeed);
+            controller.sprintCrouchSpeed = EditorGUILayout.FloatField(new GUIContent("Sprint-Crouch speed", "The speed the player will move while both sprinting and crouching."), controller.sprintCrouchSpeed);
+     
+            EditorGUILayout.Space(15);
 
-            EditorGUILayout.PropertyField(acceleration);
-            EditorGUILayout.PropertyField(playerDrag);
+            EditorGUILayout.LabelField("Acceleration", catagoryStyle);
+            controller.acceleration = EditorGUILayout.FloatField(new GUIContent("Acceleration", "The rate that the player accelerates."), controller.acceleration);
+            controller.playerDrag = EditorGUILayout.FloatField(new GUIContent("Player drag", "The amount of drag the player feels when grounded."), controller.playerDrag);
 
             EditorGUILayout.Space(15);
 
+            EditorGUILayout.LabelField("Stepping", catagoryStyle);
+            controller.maxStepHeight = EditorGUILayout.FloatField(new GUIContent("Max step height", "The maximum height that a player can step up too."), controller.maxStepHeight);
+            controller.stepSmoothingSpeed = EditorGUILayout.FloatField(new GUIContent("Step smooting speed", "The speed of the step interpolation."), controller.stepSmoothingSpeed);
 
-            controller.maxStepHeight = EditorGUILayout.FloatField("Max step height", controller.maxStepHeight);
-            controller.minStepDepth = EditorGUILayout.FloatField("Min step depth", controller.minStepDepth);
-            controller.stepSmoothing = EditorGUILayout.FloatField("Step smooting", controller.stepSmoothing);
-            controller.maxStepAngle = EditorGUILayout.FloatField("Max step angle", controller.maxStepAngle);
+            EditorGUILayout.Space(15);
 
+            EditorGUILayout.LabelField("Crouching", catagoryStyle);
+            controller.walkingHeight = EditorGUILayout.FloatField(new GUIContent("Walking height", "The height that the player is when walking."), controller.walkingHeight);
+            controller.crouchingHeight = EditorGUILayout.FloatField(new GUIContent("Crouching height", "The height that player is when crouched."), controller.crouchingHeight);
+            EditorGUILayout.PropertyField(dynamicCrouch, new GUIContent("Dynamic crouch", "When enabled the player will be able to incrementally stand up as opposed to waiting till the player has the full head room to stand up."));
+            if (controller.dynamicCrouch) {
+                controller.dynamicCrouchOffset = EditorGUILayout.FloatField(new GUIContent("Dynamic crouch offset", "The amount of extra clearance givin to the players head when using dynamic crouch."), controller.dynamicCrouchOffset);
+            }
 
             EditorGUILayout.Space(20);
         }
@@ -211,17 +220,8 @@ public class PlayerControllerEditor : Editor
 
         #region Gravity settings
         gravitySettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(gravitySettingsDD, "Gravity settings");
-        if (gravitySettingsDD) {      
-            
-
-            GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Gravity adjustment limits");
-                GUILayout.Label("Min");
-                controller.maxGravityChange.x = EditorGUILayout.FloatField(controller.maxGravityChange.x);
-                GUILayout.Label("Max");
-                controller.maxGravityChange.y = EditorGUILayout.FloatField(controller.maxGravityChange.y);
-            GUILayout.EndHorizontal();
-
+        if (gravitySettingsDD) {
+            controller.maxGravityChange = EditorGUILayout.FloatField(new GUIContent("Max gravity change", "The maximum angle in degrees that will cause the player to adjust their rotation."), controller.maxGravityChange);
             EditorGUILayout.PropertyField(attractor);
 
             EditorGUILayout.Space(20);
@@ -261,7 +261,11 @@ public class PlayerControllerEditor : Editor
             controller.walkStepTime = EditorGUILayout.FloatField(new GUIContent("Walk step time", "The amount of time between each sound footstep at walking speed. The frequecy on the footsteps will increase as the players speed increases."), controller.walkStepTime);
             EditorGUILayout.PropertyField(enableDefaultSounds, new GUIContent("Enable default sounds", "If the player is standing on an object with no tag match, The first set os sounds in the list will be used."));
 
-            EditorGUILayout.PropertyField(audio);
+            EditorGUILayout.LabelField("Audio clips", catagoryStyle);
+
+            EditorGUILayout.PropertyField(_footstepAudioClips);
+            EditorGUILayout.PropertyField(_jumpingAudioClips);
+            EditorGUILayout.PropertyField(_landingAudioClips);
 
             EditorGUILayout.Space(20);
         }

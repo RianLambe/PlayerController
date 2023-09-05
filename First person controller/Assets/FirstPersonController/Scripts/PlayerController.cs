@@ -1,11 +1,17 @@
 using Cinemachine;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using TMPro;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.PlayerLoop;
+using UnityEngine.UIElements;
 using Cursor = UnityEngine.Cursor;
 using Matrix4x4 = UnityEngine.Matrix4x4;
+using Plane = UnityEngine.Plane;
 using Quaternion = UnityEngine.Quaternion;
 using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
@@ -16,7 +22,7 @@ public class PlayerController : MonoBehaviour
     //Camera settings
     public float lookSpeed = .2f;
     public Vector2 cameraAngleLimits = new Vector2(-80, 80);
-    public Vector3 cameraOffset;
+    public float cameraOffset;
     public AnimationCurve cameraFOVCurve;
     Vector3 cameraStartingPos;
     public float cameraFOVAdjustSpeed = .1f;
@@ -34,14 +40,22 @@ public class PlayerController : MonoBehaviour
     //Moving variables
     public float walkSpeed = 5;
     public float sprintSpeed = 8;
+    public float walkCrouchSpeed;
+    public float sprintCrouchSpeed;
     float moveSpeed = 5;
     public float acceleration = 10;
     public float playerDrag = 1;
-    public AnimationCurve verticalInputMap;
+    public float maxSlopeAngle;
     public float maxStepHeight = 0.5f;
-    public float minStepDepth = 0.4f;
-    public float stepSmoothing = 9;
-    public float maxStepAngle = 85;
+    public float stepSmoothingSpeed = 9;
+    public bool smoothStep;
+    float playerHeight;
+    public float walkingHeight;
+    public float crouchingHeight;
+    RaycastHit stepRay;
+    public bool dynamicCrouch;
+    public float dynamicCrouchOffset = 0.1f;
+
 
     //Jumping variables
     public float jumpHeight = 1;
@@ -52,7 +66,7 @@ public class PlayerController : MonoBehaviour
     public jumpBufferModes jumpBufferMode;
     public float maxJumpBuffer;
     float jumpBufferTime;
-    bool perfromJump = false;
+    bool performJump = false;
     public enum jumpModes {Standard, Charge, Hold}
     public jumpModes jumpMode;
     public AnimationCurve chargeCurve;
@@ -71,11 +85,12 @@ public class PlayerController : MonoBehaviour
     float gravity = 9.81f;
     private float timeFell;
     public float timeSinceFall = 0;
-    [HideInInspector] public bool isFalling;
+    [HideInInspector] public bool isFalling; // can most likley remove
+    bool landed;
     public Vector3 gravityDirection;
     public Transform attractor;
     [Range(0,100)]public float gravityChangeSpeed = .1f;
-    public Vector2 maxGravityChange;
+    public float maxGravityChange;
 
     //Audio variables
     public AudioSource aSource;
@@ -83,9 +98,13 @@ public class PlayerController : MonoBehaviour
     float stepTime = 0.5f;
     public bool enableDefaultSounds;
     [SerializeField] public List<AudioSettings> footstepAudioClips;
+    [SerializeField] public List<AudioSettings> jumpingAudioClips;
+    [SerializeField] public List<AudioSettings> landingAudioClips;
+
 
     //Object assignment
-    Rigidbody rb;
+    public CapsuleCollider stepCollider;
+    public Rigidbody rb;
     public Transform playerObject;
     public CinemachineVirtualCamera playerCamera;
 
@@ -99,6 +118,7 @@ public class PlayerController : MonoBehaviour
     private float upAngle = 0;
     private float sideAngle = 0;
     private bool sprinting;
+    private bool crouching;
     private bool grounded;
     private int numberOfJumps;
     public Quaternion targetRotation = Quaternion.identity;
@@ -114,6 +134,10 @@ public class PlayerController : MonoBehaviour
     Animator animator;
 
     public GameObject testingTransform;
+    bool jumping;
+    public float maxUncrouchDistance;
+    bool canUncrouch;
+    Vector3 floorPos;
 
     //Called on script load
     private void Awake() {
@@ -158,12 +182,12 @@ public class PlayerController : MonoBehaviour
         }
         else if (context.performed && !grounded && jumpBufferMode == jumpBufferModes.Single || jumpBufferMode == jumpBufferModes.Continuous) {
             jumpBufferTime = Time.time;
-            perfromJump = true;
+            performJump = true;
         }
 
         //Released
         if (context.canceled) {          
-            perfromJump = false;
+            performJump = false;
 
             if (jumpMode == jumpModes.Charge) {
                 grounded = false;
@@ -179,6 +203,7 @@ public class PlayerController : MonoBehaviour
     //Performs the jump with the calculated power
     void ExecuteJump(float power) {
         timeSinceFall = Time.time;
+        jumping = true;
 
         //Cancel out vertical velocity
         SetGravityDirection(gravity, transform.up, false);
@@ -186,9 +211,11 @@ public class PlayerController : MonoBehaviour
         localVelocty = new Vector3(localVelocty.x, 0, localVelocty.z);
 
         //Apply velocity to player
-        rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * power);
+        rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * (power -  playerHeight / 2));
 
         numberOfJumps++;
+
+        PlaySounds(jumpingAudioClips);
     }
 
     //Moves rhe player along the desired plane
@@ -201,8 +228,7 @@ public class PlayerController : MonoBehaviour
 
         //Convert world global velocity to relative velocity and remove vertical component
         Matrix4x4 matrix4x4 = Matrix4x4.identity;
-        //if (slopeAngle.sqrMagnitude != 0)
-        matrix4x4.SetTRS(Vector3.zero, Quaternion.LookRotation(transform.forward, Physics.gravity), Vector3.one);
+        if (cachedSlopeAngle.sqrMagnitude > 0) matrix4x4.SetTRS(Vector3.zero, Quaternion.LookRotation(cachedSlopeAngle), Vector3.one);
         Vector3 convertedVelocity = matrix4x4.inverse.MultiplyVector(rb.velocity);
         horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
@@ -284,8 +310,27 @@ public class PlayerController : MonoBehaviour
         targetRotation = transform.rotation;
         string hitLayer;
 
-        //Does a check for if the player is touching the ground
-        grounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance, groundLayer);
+        Vector3 target = transform.position;
+
+        //Checks if the player is able to step up
+        if (Physics.BoxCast(transform.position, new Vector3(groundCheckDistance, groundCheckDistance, groundCheckDistance), -transform.up, out stepRay, Quaternion.identity, (playerHeight / 2) + maxStepHeight)) {
+            if (!jumping) {
+                float newStepOffset = (playerHeight - groundCheckDistance * 2) / 2 - stepRay.distance;
+                floorPos = transform.position - transform.up * (stepRay.distance + groundCheckDistance);
+
+                //transform.position = transform.position + (transform.up * newStepOffset);
+                transform.position = Vector3.Lerp(transform.position, transform.position + (transform.up * newStepOffset), smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
+                cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, (playerHeight - cameraOffset) / 2, 0), stepSmoothingSpeed * Time.deltaTime);
+            
+            }
+            grounded = true;
+        }
+        else {
+            grounded = false;
+        }
+
+        //Sets the players gravity to false if they are grounded to avoid jittering
+        rb.useGravity = grounded? false : true;
 
         //-----Overide gravity-----//
         if (overideGravity) {
@@ -296,57 +341,53 @@ public class PlayerController : MonoBehaviour
         else if (attractor != null) {
             //SetGravityDirection(gravity, (transform.position - attractor.transform.position).normalized, true);
             SetGravityDirection(gravity, (transform.position - attractor.transform.position).normalized, true);
-
-            Debug.Log("Attractor");
         }
 
         ////-----Horizontal checks-----//
         else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, groundLayer)) {    
             hitAngle = Vector3.Angle(gcHit.normal, transform.up);
-        
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
-        
-            //Checks if the hit objects angle relative to the player is less than the maximum to be consiodered a step
-            RaycastHit stepHit;
-            if (hitAngle > maxStepAngle) {
-                if (!Physics.Raycast(transform.TransformPoint(new Vector3(groundAngleCheckOrigin.x, groundAngleCheckOrigin.x + maxStepHeight, groundAngleCheckOrigin.z)), moveDirection, out stepHit, groundAngleCheckDistance + .2f)) {                   
-                    rb.position += transform.up * stepSmoothing * Time.deltaTime;
-                    return;
-                }
-                else {
-                    rb.velocity = transform.TransformVector(new Vector3(rb.velocity.x, 0, rb.velocity.y));
-                }
-            }
-            else {
-                slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
-                SetGravityDirection(9.81f, gcHit.normal, false);
-            }
-        
-            //Checks if the objects the player is walking into is on the "Dynamic gravity" layer meaning the player will stick to it
-            if (hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") {
+    
+            //Checks if the player is standing on something that has dynamic gravity
+            if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
+                slopeAngle = moveDirection;
+
                 SetGravityDirection(gravity, gcHit.normal, true);
+                Debug.Log("2");
+
             }
+
+            //slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
+            //SetGravityDirection(gravity, gcHit.normal, false);
+            //
+            ////Checks if the objects the player is walking into is on the "Dynamic gravity" layer meaning the player will stick to it
+            //if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
+            //    SetGravityDirection(gravity, gcHit.normal, true);
+            //    Debug.Log("1");
+            //}
         }
         
         //-----Vertical checks-----//
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -testingTransform.transform.up, out gcHit, .3f)) {
-        
+        else if (Physics.Raycast(transform.position, -testingTransform.transform.up, out gcHit, 2)) {     
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
+            hitAngle = Vector3.Angle(gcHit.normal, transform.up);
+        
         
             //Checks if the player is on a moving surface and attaches them to the object as a child         
             transform.SetParent(hitLayer == "Moving platform" || hitLayer == "Dynamic gravity + Moving platform" ? gcHit.transform : null, true);
         
             //Checks if the player is standing on something that has dynamic gravity
-            if (Vector3.Angle(gcHit.normal, transform.up) <= maxGravityChange.y && hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") {
+            if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
                 slopeAngle = moveDirection;
         
                 SetGravityDirection(gravity, gcHit.normal, true);
+                Debug.Log("2");
+        
             }
             //Checks if the player is standing on a slope 
             else if (grounded) {
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
-        
-                SetGravityDirection(gravity, gcHit.normal, false);         
+                SetGravityDirection(gravity, gcHit.normal, false);
             }
         }
         
@@ -357,17 +398,28 @@ public class PlayerController : MonoBehaviour
         
         //Deal with jump buffer and coyote time
         if (grounded) {
-            if (Time.time - jumpBufferTime <= maxJumpBuffer && perfromJump || jumpBufferMode == jumpBufferModes.Continuous && perfromJump) {
+            //Play sound once on landing
+            if (!landed) {
+                PlaySounds(landingAudioClips);
+                landed = true;
+                jumping = false;
+            }
+            //Jump once landed it jump buffer meets requirements
+            if (Time.time - jumpBufferTime <= maxJumpBuffer && performJump || jumpBufferMode == jumpBufferModes.Continuous && performJump) {
                 ExecuteJump(jumpHeight);
-                if (jumpBufferMode == jumpBufferModes.Single) perfromJump = false;
+                if (jumpBufferMode == jumpBufferModes.Single) performJump = false;
             }
             timeFell = Time.time;
         }
         else {
-            SetGravityDirection(gravity, -Physics.gravity, true);
+            SetGravityDirection(gravity, testingTransform.transform.up, false);
+
+            landed = false;
         }
 
         withinCoyoteTime = (Time.time - timeFell) <= coyoteTime;
+
+
     }
 
     //Plays the footstep sounds
@@ -378,26 +430,64 @@ public class PlayerController : MonoBehaviour
 
         if (stepTime >= walkStepTime * (walkSpeed / rb.velocity.magnitude)) {
             stepTime = 0;
-            
-            RaycastHit hit;
-            if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), -testingTransform.transform.up, out hit, .3f)) {
 
-                foreach(AudioSettings soundClip in footstepAudioClips) {
-                    if (hit.transform.tag == soundClip.tag) {
-                        aSource.PlayOneShot(soundClip.sounds[Random.Range(0, soundClip.sounds.Count)]);
-                        return;
-                    }
+            PlaySounds(footstepAudioClips);
+        }
+    }
+
+    //Plays a random sound effect from a list of audio clips
+    private void PlaySounds(List<AudioSettings> clips) {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, -testingTransform.transform.up, out hit, 2)) {
+
+            foreach (AudioSettings soundClip in clips) {
+                if (hit.transform.tag == soundClip.tag) {
+                    aSource.PlayOneShot(soundClip.sounds[Random.Range(0, soundClip.sounds.Count)]);
+                    return;
                 }
-                if(enableDefaultSounds) aSource.PlayOneShot(footstepAudioClips[0].sounds[Random.Range(0, footstepAudioClips[0].sounds.Count)]);
             }
+            if (enableDefaultSounds && clips.Count > 0) aSource.PlayOneShot(clips[0].sounds[Random.Range(0, clips[0].sounds.Count)]);
+        }
+    }
+
+    private void SetHeight() {
+        stepCollider.height = playerHeight - maxStepHeight ;
+        stepCollider.center = new Vector3(0, maxStepHeight / 2, 0);
+
+    }
+
+    private void GetMaxUnCrouchDistance() {
+        RaycastHit unCrouchHit;
+        Debug.DrawRay(floorPos + transform.up * 1, transform.up * 1, Color.red);
+
+        if (Physics.Raycast(floorPos + transform.up * crouchingHeight, transform.up, out unCrouchHit, walkingHeight - crouchingHeight, groundLayer)) {
+            maxUncrouchDistance = Mathf.Lerp(maxUncrouchDistance, unCrouchHit.distance, stepSmoothingSpeed * Time.deltaTime);
+            playerHeight = Mathf.Clamp(playerHeight, crouchingHeight, maxUncrouchDistance - dynamicCrouchOffset + crouchingHeight);
+            canUncrouch = false;
+        }
+        else {
+            maxUncrouchDistance = walkingHeight;
+            canUncrouch = true;
         }
     }
 
     //Called every frame
     private void Update() {
-        //Sets players movment speed 
+
+        //Gets sprint and crouch input
         sprinting = pi.actions.FindAction("Sprint").IsPressed();
-        moveSpeed = sprinting ? sprintSpeed : walkSpeed;
+        crouching = pi.actions.FindAction("Crouch").IsPressed();
+
+        //Sets players movment speed 
+        if (sprinting && crouching) moveSpeed = sprintCrouchSpeed;
+        else if (sprinting) moveSpeed = sprintSpeed;
+        else if (crouching) moveSpeed = walkCrouchSpeed;
+        else moveSpeed = walkSpeed;
+
+        //Set player height
+        //playerHeight = !crouching && canUncrouch? walkingHeight : crouchingHeight;
+        playerHeight = crouching? crouchingHeight : walkingHeight;
+
 
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed; //Mouse inputs
@@ -415,9 +505,10 @@ public class PlayerController : MonoBehaviour
         cachedMoveDirection = Vector3.ProjectOnPlane(cachedMoveDirection, transform.up).normalized;
         slopeAngle = moveDirection;
 
+        GetMaxUnCrouchDistance();
+        SetHeight();
 
         //Checks both if the player is grounded and if there is a wall in front of them 
-
         GroundChecks();
 
         //Smoothly rotate the player to the target rotation
@@ -450,9 +541,10 @@ public class PlayerController : MonoBehaviour
 
         //Handles playing all the footstep sounds
         FootstepSounds();
-        
+
         //If enabled, all the debug options will be visable or testing purposes
         DebugMode();
+
 
     }
 
@@ -481,6 +573,7 @@ public class PlayerController : MonoBehaviour
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
+
         MovePlayer();
 
         if (jumpMode == jumpModes.Hold && pi.actions.FindAction("Jump").IsPressed()) ExecuteJump(jumpHeight * (Time.time - jumpHoldTime));
@@ -489,22 +582,25 @@ public class PlayerController : MonoBehaviour
     //Draws debug rays in the scene as well as the debug text in the corner 
     private void DebugMode() {
         //Debug text 
-        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + perfromJump;
+        GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + maxUncrouchDistance;
         GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
         //Debug rays
-        Debug.DrawRay(transform.position, Physics.gravity.normalized * 10, Color.yellow, Time.deltaTime);
-        Debug.DrawRay(transform.position, slopeAngle * 10, Color.green, Time.deltaTime);
-        Debug.DrawRay(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), Color.red);
-        Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.black);
-        //Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.cyan, 1f);
+        //Debug.DrawRay(transform.position, Physics.gravity.normalized * 10, Color.yellow, Time.deltaTime);
+        //Debug.DrawRay(transform.position, slopeAngle * 10, Color.green, Time.deltaTime);
+        //Debug.DrawRay(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), Color.red);
+        //Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.black);
 
     }
 
     private void OnDrawGizmos() {
-        Gizmos.DrawSphere(transform.TransformPoint(groundCheckOrigin), groundCheckDistance);
+        Gizmos.DrawCube(floorPos, new Vector3(.5f, 0,.5f));
+    }
+
+    private void OnValidate() {
+        SetHeight();
     }
 }
 

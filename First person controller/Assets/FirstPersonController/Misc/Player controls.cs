@@ -80,6 +80,15 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Crouch"",
+                    ""type"": ""Button"",
+                    ""id"": ""8b3f3fc9-3b9d-4f25-a632-7013b0768640"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -236,6 +245,17 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
                     ""action"": ""Test2"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2a1f5a26-396e-4de3-ae8f-3415b19c8c1e"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -250,6 +270,7 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
         m_Controls_Sprint = m_Controls.FindAction("Sprint", throwIfNotFound: true);
         m_Controls_Test1 = m_Controls.FindAction("Test1", throwIfNotFound: true);
         m_Controls_Test2 = m_Controls.FindAction("Test2", throwIfNotFound: true);
+        m_Controls_Crouch = m_Controls.FindAction("Crouch", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -317,6 +338,7 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
     private readonly InputAction m_Controls_Sprint;
     private readonly InputAction m_Controls_Test1;
     private readonly InputAction m_Controls_Test2;
+    private readonly InputAction m_Controls_Crouch;
     public struct ControlsActions
     {
         private @Playercontrols m_Wrapper;
@@ -327,6 +349,7 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
         public InputAction @Sprint => m_Wrapper.m_Controls_Sprint;
         public InputAction @Test1 => m_Wrapper.m_Controls_Test1;
         public InputAction @Test2 => m_Wrapper.m_Controls_Test2;
+        public InputAction @Crouch => m_Wrapper.m_Controls_Crouch;
         public InputActionMap Get() { return m_Wrapper.m_Controls; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -354,6 +377,9 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
             @Test2.started += instance.OnTest2;
             @Test2.performed += instance.OnTest2;
             @Test2.canceled += instance.OnTest2;
+            @Crouch.started += instance.OnCrouch;
+            @Crouch.performed += instance.OnCrouch;
+            @Crouch.canceled += instance.OnCrouch;
         }
 
         private void UnregisterCallbacks(IControlsActions instance)
@@ -376,6 +402,9 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
             @Test2.started -= instance.OnTest2;
             @Test2.performed -= instance.OnTest2;
             @Test2.canceled -= instance.OnTest2;
+            @Crouch.started -= instance.OnCrouch;
+            @Crouch.performed -= instance.OnCrouch;
+            @Crouch.canceled -= instance.OnCrouch;
         }
 
         public void RemoveCallbacks(IControlsActions instance)
@@ -401,5 +430,6 @@ public partial class @Playercontrols: IInputActionCollection2, IDisposable
         void OnSprint(InputAction.CallbackContext context);
         void OnTest1(InputAction.CallbackContext context);
         void OnTest2(InputAction.CallbackContext context);
+        void OnCrouch(InputAction.CallbackContext context);
     }
 }
