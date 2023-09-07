@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using TMPro;
+using TMPro.EditorUtilities;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -17,7 +18,7 @@ using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
-public class PlayerController : MonoBehaviour
+public class CharacterController : MonoBehaviour
 {
     //Camera settings
     public float lookSpeed = .2f;
@@ -137,6 +138,7 @@ public class PlayerController : MonoBehaviour
     bool jumping;
     public float maxUncrouchDistance;
     bool canUncrouch;
+
     Vector3 floorPos;
 
     //Called on script load
@@ -243,9 +245,11 @@ public class PlayerController : MonoBehaviour
     public void SetGravityDirection(float newGrvaityStrenght, Vector3 upVector, bool adjustRotation) {
         if (adjustRotation) {
             targetRotation = Quaternion.FromToRotation(transform.up, upVector) * transform.rotation;
+
         }
 
         testingTransform.transform.rotation = targetRotation;
+        testingTransform.transform.position = floorPos;
         
         gravity = newGrvaityStrenght;
         Physics.gravity = upVector.normalized * -newGrvaityStrenght;
@@ -258,7 +262,7 @@ public class PlayerController : MonoBehaviour
         if (cachedMoveDirection != Vector3.zero) {
             switch (cameraStyle) {
                 case cameraStyles.Standard:
-                    angle = Quaternion.LookRotation(cachedMoveDirection.normalized, transform.up);
+                    angle = Quaternion.LookRotation(cachedMoveDirection, transform.up);
                     break;
 
                 case cameraStyles.Locked:
@@ -267,13 +271,15 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        //Rotate player
+        //Rotate player object
         if (movementInput != Vector2.zero && playerObject != null) {
+            //playerObject.transform.localRotation = angle;
             playerObject.rotation = Quaternion.RotateTowards(playerObject.rotation, angle, TPRotationSpeed * Time.deltaTime);
         }
+ 
 
         //Camera rotation
-        if(cameraTarget == null) {
+        if (cameraTarget == null) {
             upAngle = Mathf.Clamp(mousePosition.y + upAngle, cameraAngleLimits.x, cameraAngleLimits.y);
             sideAngle = mousePosition.x + sideAngle;
             playerCamera.transform.localRotation = Quaternion.Euler(-upAngle, sideAngle, 0);
@@ -283,10 +289,10 @@ public class PlayerController : MonoBehaviour
         }
 
         //Set camera FOV
-        playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
+        //playerCamera.m_Lens.FieldOfView = Mathf.Lerp(playerCamera.m_Lens.FieldOfView, cameraFOVCurve.Evaluate(rb.velocity.magnitude), cameraFOVAdjustSpeed);
 
         RaycastHit cameraCollision;
-        if (Physics.Raycast(transform.TransformPoint(cameraStartingPos), -playerCamera.transform.forward, out cameraCollision, cameraArmLenght)) {
+        if (Physics.Raycast(transform.TransformPoint(cameraStartingPos), -playerCamera.transform.forward, out cameraCollision, cameraArmLenght, groundLayer)) {
             playerCamera.transform.position = cameraCollision.point;
         }
         else {
@@ -308,26 +314,13 @@ public class PlayerController : MonoBehaviour
     void GroundChecks() {
         float hitAngle;
         targetRotation = transform.rotation;
+
         string hitLayer;
 
         Vector3 target = transform.position;
 
         //Checks if the player is able to step up
-        if (Physics.BoxCast(transform.position, new Vector3(groundCheckDistance, groundCheckDistance, groundCheckDistance), -transform.up, out stepRay, Quaternion.identity, (playerHeight / 2) + maxStepHeight)) {
-            if (!jumping) {
-                float newStepOffset = (playerHeight - groundCheckDistance * 2) / 2 - stepRay.distance;
-                floorPos = transform.position - transform.up * (stepRay.distance + groundCheckDistance);
-
-                //transform.position = transform.position + (transform.up * newStepOffset);
-                transform.position = Vector3.Lerp(transform.position, transform.position + (transform.up * newStepOffset), smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
-                cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, (playerHeight - cameraOffset) / 2, 0), stepSmoothingSpeed * Time.deltaTime);
-            
-            }
-            grounded = true;
-        }
-        else {
-            grounded = false;
-        }
+        StepCheck();
 
         //Sets the players gravity to false if they are grounded to avoid jittering
         rb.useGravity = grounded? false : true;
@@ -344,17 +337,16 @@ public class PlayerController : MonoBehaviour
         }
 
         ////-----Horizontal checks-----//
-        else if (Physics.Raycast(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, groundLayer)) {    
+        else if (Physics.Raycast(transform.position + (transform.up * .15f), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, groundLayer)) {   
+            
             hitAngle = Vector3.Angle(gcHit.normal, transform.up);
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
     
             //Checks if the player is standing on something that has dynamic gravity
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
                 slopeAngle = moveDirection;
-
                 SetGravityDirection(gravity, gcHit.normal, true);
-                Debug.Log("2");
-
+                Debug.Log("Horizontal");
             }
 
             //slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
@@ -368,32 +360,20 @@ public class PlayerController : MonoBehaviour
         }
         
         //-----Vertical checks-----//
-        else if (Physics.Raycast(transform.position, -testingTransform.transform.up, out gcHit, 2)) {     
+        else if (Physics.Raycast(transform.position + (transform.up * .15f), -testingTransform.transform.up, out gcHit, 2)) {     
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
-            hitAngle = Vector3.Angle(gcHit.normal, transform.up);
-        
-        
-            //Checks if the player is on a moving surface and attaches them to the object as a child         
-            transform.SetParent(hitLayer == "Moving platform" || hitLayer == "Dynamic gravity + Moving platform" ? gcHit.transform : null, true);
+            hitAngle = Vector3.Angle(gcHit.normal, testingTransform.transform.up);
         
             //Checks if the player is standing on something that has dynamic gravity
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
-                slopeAngle = moveDirection;
-        
-                SetGravityDirection(gravity, gcHit.normal, true);
-                Debug.Log("2");
-        
+                slopeAngle = moveDirection; 
+                SetGravityDirection(gravity, gcHit.normal, true);        
             }
             //Checks if the player is standing on a slope 
             else if (grounded) {
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
                 SetGravityDirection(gravity, gcHit.normal, false);
             }
-        }
-        
-        //Reset parent if player is not on moving platfrom 
-        else {
-            transform.SetParent(null);
         }
         
         //Deal with jump buffer and coyote time
@@ -432,13 +412,14 @@ public class PlayerController : MonoBehaviour
             stepTime = 0;
 
             PlaySounds(footstepAudioClips);
+            Debug.Log("Should play sound");
         }
     }
 
     //Plays a random sound effect from a list of audio clips
     private void PlaySounds(List<AudioSettings> clips) {
         RaycastHit hit;
-        if (Physics.Raycast(transform.position, -testingTransform.transform.up, out hit, 2)) {
+        if (Physics.Raycast(transform.position + (transform.up * .15f), -testingTransform.transform.up, out hit, 2)) {
 
             foreach (AudioSettings soundClip in clips) {
                 if (hit.transform.tag == soundClip.tag) {
@@ -452,7 +433,7 @@ public class PlayerController : MonoBehaviour
 
     private void SetHeight() {
         stepCollider.height = playerHeight - maxStepHeight ;
-        stepCollider.center = new Vector3(0, maxStepHeight / 2, 0);
+        stepCollider.center = new Vector3(0, (playerHeight - maxStepHeight) / 2 + maxStepHeight, 0);
 
     }
 
@@ -460,7 +441,7 @@ public class PlayerController : MonoBehaviour
         RaycastHit unCrouchHit;
         Debug.DrawRay(floorPos + transform.up * 1, transform.up * 1, Color.red);
 
-        if (Physics.Raycast(floorPos + transform.up * crouchingHeight, transform.up, out unCrouchHit, walkingHeight - crouchingHeight, groundLayer)) {
+        if (Physics.Raycast(floorPos + (transform.up * crouchingHeight), transform.up, out unCrouchHit, walkingHeight, groundLayer)) {
             maxUncrouchDistance = Mathf.Lerp(maxUncrouchDistance, unCrouchHit.distance, stepSmoothingSpeed * Time.deltaTime);
             playerHeight = Mathf.Clamp(playerHeight, crouchingHeight, maxUncrouchDistance - dynamicCrouchOffset + crouchingHeight);
             canUncrouch = false;
@@ -471,9 +452,38 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    //Called every frame
-    private void Update() {
+    private void StepCheck() {
+        if (Physics.BoxCast(transform.position + (transform.up * playerHeight), new Vector3(groundCheckDistance, groundCheckDistance, groundCheckDistance), -transform.up, out stepRay, Quaternion.identity, (playerHeight) + maxStepHeight, groundLayer)) {
+            if (!jumping) {
+                float newStepOffset = (playerHeight - groundCheckDistance * 2) / 2 - stepRay.distance;
+                //floorPos = transform.position - transform.up * (stepRay.distance + groundCheckDistance);
+                floorPos = transform.position + (transform.up * playerHeight) - transform.up * (stepRay.distance + groundCheckDistance);
 
+                //transform.position = transform.position + (transform.up * newStepOffset);
+                //transform.position = Vector3.Lerp(transform.position, transform.position + (transform.up * newStepOffset), smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
+                //cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, (playerHeight - cameraOffset) / 2, 0), stepSmoothingSpeed * Time.deltaTime);
+
+                transform.position = Vector3.Lerp(transform.position, floorPos, smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
+
+                //transform.position = floorPos;
+                cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, playerHeight - cameraOffset, 0), stepSmoothingSpeed * Time.deltaTime);
+
+                string stepLayer = LayerMask.LayerToName(stepRay.transform.gameObject.layer);
+
+                transform.SetParent(stepLayer == "Moving platform" || stepLayer == "Dynamic gravity + Moving platform" ? stepRay.transform : null, true);
+                testingTransform.transform.SetParent(stepLayer == "Moving platform" || stepLayer == "Dynamic gravity + Moving platform" ? stepRay.transform : null, true);
+
+            }
+            grounded = true;
+        }
+        else {
+            grounded = false;
+            floorPos = transform.position - transform.up * (playerHeight / 2);
+            transform.SetParent(null);
+        }
+    }
+
+    private void GetInput() {
         //Gets sprint and crouch input
         sprinting = pi.actions.FindAction("Sprint").IsPressed();
         crouching = pi.actions.FindAction("Crouch").IsPressed();
@@ -486,8 +496,7 @@ public class PlayerController : MonoBehaviour
 
         //Set player height
         //playerHeight = !crouching && canUncrouch? walkingHeight : crouchingHeight;
-        playerHeight = crouching? crouchingHeight : walkingHeight;
-
+        playerHeight = crouching ? crouchingHeight : walkingHeight;
 
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed; //Mouse inputs
@@ -504,15 +513,30 @@ public class PlayerController : MonoBehaviour
         cachedMoveDirection = playerCamera.transform.forward * inputCache.y + playerCamera.transform.right * inputCache.x;
         cachedMoveDirection = Vector3.ProjectOnPlane(cachedMoveDirection, transform.up).normalized;
         slopeAngle = moveDirection;
+    }
 
+    //Called every frame
+    private void Update() {
+
+
+        //Gets the players input
+        GetInput();
+
+        //Handels all forms of rotation for the player
+        RotatePlayer();
+
+        //Handels crouching 
         GetMaxUnCrouchDistance();
         SetHeight();
 
         //Checks both if the player is grounded and if there is a wall in front of them 
-        GroundChecks();
 
         //Smoothly rotate the player to the target rotation
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
+        //transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Lerp(transform.rotation, testingTransform.transform.rotation, gravityChangeSpeed * Time.deltaTime);
+
+        GroundChecks();
+
 
         //moveSpeed = grounded ? 0 : moveSpeed; // temp code, change for more robust 
 
@@ -530,11 +554,10 @@ public class PlayerController : MonoBehaviour
         localVelocty = transform.InverseTransformDirection(rb.velocity);
 
         //Makes sure the player does not exceed a certain speed
-        moveSpeed *= movementInput.magnitude;
+        if (grounded) moveSpeed *= movementInput.magnitude;
         LimitPlayerSpeed();
 
         //Rotates the player camera
-        RotatePlayer();
 
         //Sets values for the animation graph as well as rotates player to desired direction
         AnimateCharcter();
@@ -588,10 +611,10 @@ public class PlayerController : MonoBehaviour
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
 
         //Debug rays
-        //Debug.DrawRay(transform.position, Physics.gravity.normalized * 10, Color.yellow, Time.deltaTime);
-        //Debug.DrawRay(transform.position, slopeAngle * 10, Color.green, Time.deltaTime);
-        //Debug.DrawRay(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), Color.red);
-        //Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.black);
+        Debug.DrawRay(transform.position, Physics.gravity.normalized * 10, Color.yellow, Time.deltaTime);
+        Debug.DrawRay(transform.position, slopeAngle * 10, Color.green, Time.deltaTime);
+        Debug.DrawRay(transform.TransformPoint(groundAngleCheckOrigin), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), Color.red);
+        Debug.DrawLine(transform.TransformPoint(groundAngleCheckOrigin), transform.TransformPoint(groundAngleCheckOrigin) + cachedMoveDirection * groundAngleCheckDistance, Color.black);
 
     }
 

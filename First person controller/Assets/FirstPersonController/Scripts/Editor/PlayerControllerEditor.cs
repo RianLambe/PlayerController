@@ -9,11 +9,11 @@ using UnityEditor;
 using UnityEditor.Rendering.HighDefinition;
 using UnityEditorInternal;
 using UnityEngine;
-using static PlayerController;
+using static CharacterController;
 using static UnityEngine.UI.Image;
 
-[CustomEditor(typeof(PlayerController))]
-public class PlayerControllerEditor : Editor
+[CustomEditor(typeof(CharacterController))]
+public class CharacterControllerEditor : Editor
 {
     //Camera settings
     SerializedProperty useHeadBobCurves;
@@ -82,18 +82,15 @@ public class PlayerControllerEditor : Editor
 
     public override void OnInspectorGUI() {
         //Base inspectotor 
-        //base.OnInspectorGUI();  
-        //EditorGUILayout.Space(20);
+        base.OnInspectorGUI();  
+        EditorGUILayout.Space(20);
 
-        serializedObject.Update();
-
-        PlayerController controller = (PlayerController)target;
-        var catagoryStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter , fontSize = 15};
-        catagoryStyle.richText = true;
-
+        CharacterController controller = (CharacterController)target;
+        GUIStyle catagoryStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter , fontSize = 15, richText = true};
         GUIStyle headerStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 25 };
         GUILayout.Label("Character controller", headerStyle);
-
+        
+        serializedObject.Update();
         Undo.RecordObject(controller, ("Changed player controller variable"));
 
 
@@ -136,7 +133,7 @@ public class PlayerControllerEditor : Editor
             EditorGUILayout.Space(15f);
 
             EditorGUILayout.LabelField("Rotation modes", catagoryStyle);
-            controller.cameraStyle = (PlayerController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the direction they are looking and use the full set of animations."), controller.cameraStyle);
+            controller.cameraStyle = (CharacterController.cameraStyles)EditorGUILayout.EnumPopup(new GUIContent("Camera style", "When set to standard the player model will rotate to the direction of movement while only using 1 dimension of the animation graph (Forward and idle), and when set to locked the player will maintain the direction they are looking and use the full set of animations."), controller.cameraStyle);
             controller.TPRotationSpeed = EditorGUILayout.FloatField(new GUIContent("Character rotation speed", "The speed that the player model will rotate to the new rotation."), controller.TPRotationSpeed);
             controller.cameraTarget = EditorGUILayout.ObjectField(new GUIContent("Camera Target", "If left as 'null' then nothing will happen but if there is a selected transform then the camera will remain focused on the object."), controller.cameraTarget, typeof(Transform), true) as Transform;
             
@@ -186,18 +183,18 @@ public class PlayerControllerEditor : Editor
         #region Jump settings
         jumpSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(jumpSettingsDD, "Jump settings");
         if(jumpSettingsDD) {
-            controller.jumpMode = (PlayerController.jumpModes)EditorGUILayout.EnumPopup(new GUIContent("Jump mode", "Changes the style of jumping between various modes."), controller.jumpMode);
+            controller.jumpMode = (CharacterController.jumpModes)EditorGUILayout.EnumPopup(new GUIContent("Jump mode", "Changes the style of jumping between various modes."), controller.jumpMode);
 
             switch (controller.jumpMode) {
-                case PlayerController.jumpModes.Standard:
+                case CharacterController.jumpModes.Standard:
                     EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump height", "This is the height that the player will jump. Note that due to the way the physics system works within unity the player will always reach just under this height."));
                     break;
 
-                case PlayerController.jumpModes.Charge:
+                case CharacterController.jumpModes.Charge:
                     controller.chargeCurve = EditorGUILayout.CurveField(new GUIContent("Jump charge curve", "The height that the player will jump too depending on how long they hold the jump button. The 'X' axis represents the time and the 'Y' axis represents the height."), controller.chargeCurve);
                     break;
 
-                case PlayerController.jumpModes.Hold:
+                case CharacterController.jumpModes.Hold:
                     EditorGUILayout.PropertyField(jumpHeight, new GUIContent("Jump power", "This is the force applied to the player every frame."));
                     break;
             }
@@ -206,7 +203,7 @@ public class PlayerControllerEditor : Editor
             
             if(controller.maxJumps == 1) controller.coyoteTime = EditorGUILayout.FloatField(new GUIContent("Coyote time", "The amount of time after the player falls off a ledge where they can still jump. Note this is only enabled when the 'Max jumps' is set to 1."), controller.coyoteTime);
 
-            controller.jumpBufferMode = (PlayerController.jumpBufferModes)EditorGUILayout.EnumPopup(new GUIContent("Jump buffer", "When jump buffer is enabled, the player will be able to press the jump button before landing and it will cache the jump to be used straight away after landing."), controller.jumpBufferMode);
+            controller.jumpBufferMode = (CharacterController.jumpBufferModes)EditorGUILayout.EnumPopup(new GUIContent("Jump buffer", "When jump buffer is enabled, the player will be able to press the jump button before landing and it will cache the jump to be used straight away after landing."), controller.jumpBufferMode);
             
             if (controller.jumpBufferMode == jumpBufferModes.Single) {
                 controller.maxJumpBuffer = EditorGUILayout.FloatField(new GUIContent("Max jump buffer", "The maximum amount of time before landing where a jump will be added to the buffer."), controller.maxJumpBuffer);
@@ -222,7 +219,7 @@ public class PlayerControllerEditor : Editor
         gravitySettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(gravitySettingsDD, "Gravity settings");
         if (gravitySettingsDD) {
             controller.maxGravityChange = EditorGUILayout.FloatField(new GUIContent("Max gravity change", "The maximum angle in degrees that will cause the player to adjust their rotation."), controller.maxGravityChange);
-            EditorGUILayout.PropertyField(attractor);
+            EditorGUILayout.PropertyField(attractor, new GUIContent("Attractor", "If attractor is assigned a transform it will change the gravity to face in the direction of the origion of the object. This is usefull for things such as planets."));
 
             EditorGUILayout.Space(20);
         }
