@@ -135,6 +135,7 @@ public class CharacterController : MonoBehaviour
     Animator animator;
 
     public GameObject testingTransform;
+    public Matrix4x4 predictiveOrientation;
     bool jumping;
     public float maxUncrouchDistance;
     bool canUncrouch;
@@ -248,6 +249,8 @@ public class CharacterController : MonoBehaviour
 
         }
 
+        predictiveOrientation.SetTRS(floorPos, targetRotation, Vector3.one);
+        
         testingTransform.transform.rotation = targetRotation;
         testingTransform.transform.position = floorPos;
         
