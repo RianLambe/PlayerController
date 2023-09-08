@@ -85,14 +85,17 @@ public class CharacterControllerEditor : Editor
         base.OnInspectorGUI();  
         EditorGUILayout.Space(20);
 
+        //Reference to the charactrer controller
         CharacterController controller = (CharacterController)target;
+
+        //Create text styles 
         GUIStyle catagoryStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter , fontSize = 15, richText = true};
         GUIStyle headerStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 25 };
-        GUILayout.Label("Character controller", headerStyle);
         
         serializedObject.Update();
         Undo.RecordObject(controller, ("Changed player controller variable"));
 
+        GUILayout.Label("Character controller", headerStyle);
 
         # region Camera settings
         cameraSettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(cameraSettingsDD, "Camera settings");
@@ -117,6 +120,7 @@ public class CharacterControllerEditor : Editor
                 controller.cameraFOVAdjustSpeed = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
             GUILayout.EndHorizontal();
 
+            controller.cameraOffset = EditorGUILayout.FloatField(new GUIContent("Camera offset", "This setting adjusts the hight of the camera. The height is offset from the current player height."), controller.cameraOffset);
             controller.cameraArmLenght = EditorGUILayout.FloatField(new GUIContent("Camera arm lenght", "The distance the camera will try to maintain away from the player."), controller.cameraArmLenght);
 
             EditorGUILayout.Space(15f);
@@ -231,19 +235,17 @@ public class CharacterControllerEditor : Editor
         #region Ground checks
         groundChecksDD = EditorGUILayout.BeginFoldoutHeaderGroup(groundChecksDD, "Ground checks");
         if (groundChecksDD) {
-            EditorGUILayout.PropertyField(groundCheckDistance);
+            controller.groundCheckOffset = EditorGUILayout.FloatField(new GUIContent("Ground check offset", "The distance off the ground the check will be tested from."), controller.groundCheckOffset);
+            controller.groundCheckSize = EditorGUILayout.FloatField(new GUIContent("Ground check size", "The size of the check performed. The bigger this value, the further away the player will atempt to step up onto something"), controller.groundCheckSize);
+            controller.horizontalCheckDistance = EditorGUILayout.FloatField(new GUIContent("Horizontal check distance", "The distance checked in the horizontal direction. This is used for testing if a player can walk up a wall."), controller.horizontalCheckDistance);
+            controller.verticalCheckDistance = EditorGUILayout.FloatField(new GUIContent("Vertical check distance", "The distance checked in the vertical direction. This is used for testing if a player can be realigned to a new dynamic gravity face."), controller.verticalCheckDistance);
 
             EditorGUILayout.Space(15f);
 
-            controller.groundAngleCheckOrigin = EditorGUILayout.Vector3Field("Ground angle check origin", controller.groundAngleCheckOrigin);
-            EditorGUILayout.PropertyField(groundAngleCheckDistance);
-
-            EditorGUILayout.Space(15f);
-
-            LayerMask groundMask = EditorGUILayout.MaskField("Ground layer", InternalEditorUtility.LayerMaskToConcatenatedLayersMask(controller.groundLayer), InternalEditorUtility.layers);
+            LayerMask groundMask = EditorGUILayout.MaskField(new GUIContent("Ground layer", "The layer that will be used for testing if the player is standing on something."), InternalEditorUtility.LayerMaskToConcatenatedLayersMask(controller.groundLayer), InternalEditorUtility.layers);
             controller.groundLayer = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(groundMask);
 
-            LayerMask dynamicGravityMask = EditorGUILayout.MaskField("Dynamic gravity layer", InternalEditorUtility.LayerMaskToConcatenatedLayersMask(controller.dynamicGravityLayer), InternalEditorUtility.layers);
+            LayerMask dynamicGravityMask = EditorGUILayout.MaskField(new GUIContent("Dynamic gravity layer", "The layer that will be used for testing if the player is touching a dynamic gravity surface."), InternalEditorUtility.LayerMaskToConcatenatedLayersMask(controller.dynamicGravityLayer), InternalEditorUtility.layers);
             controller.dynamicGravityLayer = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(dynamicGravityMask);
 
             EditorGUILayout.Space(20);
@@ -269,15 +271,11 @@ public class CharacterControllerEditor : Editor
         }
         #endregion
 
-
         #region Object assignment
         objectAssignmentDD = EditorGUILayout.BeginFoldoutHeaderGroup(objectAssignmentDD, "Object assignment");
         if (objectAssignmentDD) {
-            //controller.test = EditorGUILayout.ObjectField("Camera Target", controller.test, typeof(Transform), true) as Transform;
-            controller.playerObject = EditorGUILayout.ObjectField("Player object", controller.playerObject, typeof(Transform), true) as Transform;
-            //controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
-            controller.playerCamera = EditorGUILayout.ObjectField("Player camera", controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
-
+            controller.playerObject = EditorGUILayout.ObjectField(new GUIContent("Player object", "The gameobject will be used for animations and directional rotation if enabled."), controller.playerObject, typeof(Transform), true) as Transform;
+            controller.playerCamera = EditorGUILayout.ObjectField(new GUIContent("Player camera", "A reference to the players camera. This must be a Cinemachine camera."), controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
 
             EditorGUILayout.Space(20);
         }
