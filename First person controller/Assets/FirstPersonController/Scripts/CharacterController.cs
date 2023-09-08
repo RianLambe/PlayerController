@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using TMPro;
 using TMPro.EditorUtilities;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -142,6 +143,8 @@ public class CharacterController : MonoBehaviour
 
     Vector3 floorPos;
 
+    public GameObject thisisatets;
+
     //Called on script load
     private void Awake() {
         //Get references to GaemObjects 
@@ -150,6 +153,7 @@ public class CharacterController : MonoBehaviour
         pi = GetComponent<PlayerInput>();
         animator = playerObject == null ? null :playerObject.GetComponent<Animator>();
         cameraStartingPos = playerCamera.transform.localPosition;
+        predictiveOrientation.SetTRS(Vector3.zero, Quaternion.identity, Vector3.one);
 
         //Set cursor lock mode
         Cursor.lockState = CursorLockMode.Locked;
@@ -228,6 +232,19 @@ public class CharacterController : MonoBehaviour
 
     //Limit movement speed
     public void LimitPlayerSpeed() {
+        if (grounded) moveSpeed *= movementInput.magnitude;
+
+        //Sets player drag depending on weather they are grounded or not
+        if (grounded && ((Time.time - timeSinceFall) > .2f)) {
+            rb.drag = playerDrag;
+            isFalling = false;
+            numberOfJumps = 0;
+        }
+        else {
+            rb.drag = 0;
+        }
+
+        localVelocty = transform.InverseTransformDirection(rb.velocity);
 
         //Convert world global velocity to relative velocity and remove vertical component
         Matrix4x4 matrix4x4 = Matrix4x4.identity;
@@ -311,6 +328,9 @@ public class CharacterController : MonoBehaviour
             playerCamera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_FrequencyGain = rb.velocity.magnitude * headBobFrequency;
             playerCamera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = rb.velocity.magnitude * headBobAmplitude;
         }
+
+        //Rotates the player to the new desired rotation
+        transform.rotation = Quaternion.Lerp(transform.rotation, predictiveOrientation.rotation, gravityChangeSpeed * Time.deltaTime);
     }
 
     //Checks to see if the player is grounded as well as the angle of the ground
@@ -340,7 +360,7 @@ public class CharacterController : MonoBehaviour
         }
 
         ////-----Horizontal checks-----//
-        else if (Physics.Raycast(transform.position + (transform.up * .15f), Vector3.ProjectOnPlane(moveDirection, testingTransform.transform.up), out gcHit, groundAngleCheckDistance, groundLayer)) {   
+        else if (Physics.Raycast(transform.position + (transform.up * .15f), Vector3.ProjectOnPlane(moveDirection, predictiveOrientation * Vector3.up), out gcHit, groundAngleCheckDistance, groundLayer)) {   
             
             hitAngle = Vector3.Angle(gcHit.normal, transform.up);
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
@@ -349,23 +369,13 @@ public class CharacterController : MonoBehaviour
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
                 slopeAngle = moveDirection;
                 SetGravityDirection(gravity, gcHit.normal, true);
-                Debug.Log("Horizontal");
             }
-
-            //slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
-            //SetGravityDirection(gravity, gcHit.normal, false);
-            //
-            ////Checks if the objects the player is walking into is on the "Dynamic gravity" layer meaning the player will stick to it
-            //if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
-            //    SetGravityDirection(gravity, gcHit.normal, true);
-            //    Debug.Log("1");
-            //}
         }
         
         //-----Vertical checks-----//
-        else if (Physics.Raycast(transform.position + (transform.up * .15f), -testingTransform.transform.up, out gcHit, 2)) {     
+        else if (Physics.Raycast(transform.position + (transform.up * .15f), -(predictiveOrientation.rotation * Vector3.up), out gcHit, 2)) {     
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
-            hitAngle = Vector3.Angle(gcHit.normal, testingTransform.transform.up);
+            hitAngle = Vector3.Angle(gcHit.normal, predictiveOrientation * Vector3.up);
         
             //Checks if the player is standing on something that has dynamic gravity
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
@@ -395,7 +405,7 @@ public class CharacterController : MonoBehaviour
             timeFell = Time.time;
         }
         else {
-            SetGravityDirection(gravity, testingTransform.transform.up, false);
+            SetGravityDirection(gravity, predictiveOrientation * Vector3.up, false);
 
             landed = false;
         }
@@ -415,14 +425,13 @@ public class CharacterController : MonoBehaviour
             stepTime = 0;
 
             PlaySounds(footstepAudioClips);
-            Debug.Log("Should play sound");
         }
     }
 
     //Plays a random sound effect from a list of audio clips
     private void PlaySounds(List<AudioSettings> clips) {
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + (transform.up * .15f), -testingTransform.transform.up, out hit, 2)) {
+        if (Physics.Raycast(transform.position + (transform.up * .15f), -(predictiveOrientation * Vector3.up), out hit, 2)) {
 
             foreach (AudioSettings soundClip in clips) {
                 if (hit.transform.tag == soundClip.tag) {
@@ -453,29 +462,26 @@ public class CharacterController : MonoBehaviour
             maxUncrouchDistance = walkingHeight;
             canUncrouch = true;
         }
+
+        SetHeight();
     }
 
     private void StepCheck() {
         if (Physics.BoxCast(transform.position + (transform.up * playerHeight), new Vector3(groundCheckDistance, groundCheckDistance, groundCheckDistance), -transform.up, out stepRay, Quaternion.identity, (playerHeight) + maxStepHeight, groundLayer)) {
             if (!jumping) {
-                float newStepOffset = (playerHeight - groundCheckDistance * 2) / 2 - stepRay.distance;
-                //floorPos = transform.position - transform.up * (stepRay.distance + groundCheckDistance);
                 floorPos = transform.position + (transform.up * playerHeight) - transform.up * (stepRay.distance + groundCheckDistance);
 
-                //transform.position = transform.position + (transform.up * newStepOffset);
-                //transform.position = Vector3.Lerp(transform.position, transform.position + (transform.up * newStepOffset), smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
-                //cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, (playerHeight - cameraOffset) / 2, 0), stepSmoothingSpeed * Time.deltaTime);
-
+                //Move the player and the camera to the new step height position
                 transform.position = Vector3.Lerp(transform.position, floorPos, smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
-
-                //transform.position = floorPos;
                 cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, playerHeight - cameraOffset, 0), stepSmoothingSpeed * Time.deltaTime);
 
                 string stepLayer = LayerMask.LayerToName(stepRay.transform.gameObject.layer);
 
                 transform.SetParent(stepLayer == "Moving platform" || stepLayer == "Dynamic gravity + Moving platform" ? stepRay.transform : null, true);
+                testingTransform.transform.rotation = Quaternion.LookRotation(transform.forward, stepRay.normal);
                 testingTransform.transform.SetParent(stepLayer == "Moving platform" || stepLayer == "Dynamic gravity + Moving platform" ? stepRay.transform : null, true);
 
+                //if (transform.parent != null) predictiveOrientation.SetTRS(floorPos, Quaternion.Inverse(transform.parent.rotation) * predictiveOrientation.rotation, Vector3.one);
             }
             grounded = true;
         }
@@ -521,46 +527,22 @@ public class CharacterController : MonoBehaviour
     //Called every frame
     private void Update() {
 
-
         //Gets the players input
         GetInput();
+
+        //Does a series of tests to determine if the player is grounded or if there is a wall in front of them
+        GroundChecks();
+
+        //Handels crouching 
+        GetMaxUnCrouchDistance();
 
         //Handels all forms of rotation for the player
         RotatePlayer();
 
-        //Handels crouching 
-        GetMaxUnCrouchDistance();
-        SetHeight();
-
-        //Checks both if the player is grounded and if there is a wall in front of them 
-
-        //Smoothly rotate the player to the target rotation
-        //transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, gravityChangeSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, testingTransform.transform.rotation, gravityChangeSpeed * Time.deltaTime);
-
-        GroundChecks();
-
-
         //moveSpeed = grounded ? 0 : moveSpeed; // temp code, change for more robust 
 
-        //Sets player drag depending on weather they are grounded or not
-        if (grounded && ((Time.time - timeSinceFall) > .2f)) {
-            rb.drag = playerDrag;
-            isFalling = false;
-            numberOfJumps = 0;
-
-        }
-        else {
-            rb.drag = 0;
-        }
-
-        localVelocty = transform.InverseTransformDirection(rb.velocity);
-
         //Makes sure the player does not exceed a certain speed
-        if (grounded) moveSpeed *= movementInput.magnitude;
         LimitPlayerSpeed();
-
-        //Rotates the player camera
 
         //Sets values for the animation graph as well as rotates player to desired direction
         AnimateCharcter();
@@ -570,8 +552,6 @@ public class CharacterController : MonoBehaviour
 
         //If enabled, all the debug options will be visable or testing purposes
         DebugMode();
-
-
     }
 
     //passes through variables to the animation controller 
@@ -599,6 +579,7 @@ public class CharacterController : MonoBehaviour
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
+        //if (transform.parent != null) predictiveOrientation.SetTRS(floorPos, Quaternion.Inverse(transform.parent.rotation) * predictiveOrientation.rotation, Vector3.one);
 
         MovePlayer();
 

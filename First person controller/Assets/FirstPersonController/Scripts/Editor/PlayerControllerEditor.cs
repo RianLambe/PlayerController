@@ -117,6 +117,8 @@ public class CharacterControllerEditor : Editor
                 controller.cameraFOVAdjustSpeed = EditorGUILayout.FloatField(controller.cameraFOVAdjustSpeed);
             GUILayout.EndHorizontal();
 
+            controller.cameraArmLenght = EditorGUILayout.FloatField(new GUIContent("Camera arm lenght", "The distance the camera will try to maintain away from the player."), controller.cameraArmLenght);
+
             EditorGUILayout.Space(15f);
 
             EditorGUILayout.LabelField("Head bobbing", catagoryStyle);
@@ -229,7 +231,6 @@ public class CharacterControllerEditor : Editor
         #region Ground checks
         groundChecksDD = EditorGUILayout.BeginFoldoutHeaderGroup(groundChecksDD, "Ground checks");
         if (groundChecksDD) {
-            controller.groundCheckOrigin = EditorGUILayout.Vector3Field("Ground check origin", controller.groundCheckOrigin);
             EditorGUILayout.PropertyField(groundCheckDistance);
 
             EditorGUILayout.Space(15f);
