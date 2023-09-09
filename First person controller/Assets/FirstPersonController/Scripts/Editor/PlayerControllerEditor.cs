@@ -170,12 +170,14 @@ public class CharacterControllerEditor : Editor
             EditorGUILayout.LabelField("Stepping", catagoryStyle);
             controller.maxStepHeight = EditorGUILayout.FloatField(new GUIContent("Max step height", "The maximum height that a player can step up too."), controller.maxStepHeight);
             controller.stepSmoothingSpeed = EditorGUILayout.FloatField(new GUIContent("Step smooting speed", "The speed of the step interpolation."), controller.stepSmoothingSpeed);
+            controller.maxSlopeAngle = EditorGUILayout.FloatField(new GUIContent("Max slope angle", "The maximum slope detection angle."), controller.maxSlopeAngle);
 
             EditorGUILayout.Space(15);
 
             EditorGUILayout.LabelField("Crouching", catagoryStyle);
             controller.walkingHeight = EditorGUILayout.FloatField(new GUIContent("Walking height", "The height that the player is when walking."), controller.walkingHeight);
             controller.crouchingHeight = EditorGUILayout.FloatField(new GUIContent("Crouching height", "The height that player is when crouched."), controller.crouchingHeight);
+            controller.crouchSpeed = EditorGUILayout.FloatField(new GUIContent("Crouch speed", "The speed that the player will crouch."), controller.crouchSpeed);
             EditorGUILayout.PropertyField(dynamicCrouch, new GUIContent("Dynamic crouch", "When enabled the player will be able to incrementally stand up as opposed to waiting till the player has the full head room to stand up."));
             if (controller.dynamicCrouch) {
                 controller.dynamicCrouchOffset = EditorGUILayout.FloatField(new GUIContent("Dynamic crouch offset", "The amount of extra clearance givin to the players head when using dynamic crouch."), controller.dynamicCrouchOffset);
@@ -224,7 +226,8 @@ public class CharacterControllerEditor : Editor
         #region Gravity settings
         gravitySettingsDD = EditorGUILayout.BeginFoldoutHeaderGroup(gravitySettingsDD, "Gravity settings");
         if (gravitySettingsDD) {
-            controller.maxGravityChange = EditorGUILayout.FloatField(new GUIContent("Max gravity change", "The maximum angle in degrees that will cause the player to adjust their rotation."), controller.maxGravityChange);
+            controller.dynamicGravityLimit = EditorGUILayout.FloatField(new GUIContent("Dynamic gravity limit", "The maximum angle in degrees that the player will to attempt to adjust their rotation. Note that beacuase of floating point precision error it sometimes may be necessary to give a slight extra margin of a degree or so."), controller.dynamicGravityLimit);
+            controller.gravityChangeSpeed = EditorGUILayout.FloatField(new GUIContent("Gravity change speed", "The speed that the player will rotate to the new gravity direction."), controller.gravityChangeSpeed);
             EditorGUILayout.PropertyField(attractor, new GUIContent("Attractor", "If attractor is assigned a transform it will change the gravity to face in the direction of the origion of the object. This is usefull for things such as planets."));
 
             EditorGUILayout.Space(20);
@@ -239,6 +242,7 @@ public class CharacterControllerEditor : Editor
             controller.groundCheckSize = EditorGUILayout.FloatField(new GUIContent("Ground check size", "The size of the check performed. The bigger this value, the further away the player will atempt to step up onto something"), controller.groundCheckSize);
             controller.horizontalCheckDistance = EditorGUILayout.FloatField(new GUIContent("Horizontal check distance", "The distance checked in the horizontal direction. This is used for testing if a player can walk up a wall."), controller.horizontalCheckDistance);
             controller.verticalCheckDistance = EditorGUILayout.FloatField(new GUIContent("Vertical check distance", "The distance checked in the vertical direction. This is used for testing if a player can be realigned to a new dynamic gravity face."), controller.verticalCheckDistance);
+            controller.groundCheckCoolDown = EditorGUILayout.FloatField(new GUIContent("Ground check cooldown", "The amount of time after not being grounded that the player will check if it is grounded again. This is used for not immediately setting the player as grounded for the few frames where the player is still in range of the ground checks."), controller.groundCheckCoolDown);
 
             EditorGUILayout.Space(15f);
 
@@ -274,8 +278,10 @@ public class CharacterControllerEditor : Editor
         #region Object assignment
         objectAssignmentDD = EditorGUILayout.BeginFoldoutHeaderGroup(objectAssignmentDD, "Object assignment");
         if (objectAssignmentDD) {
-            controller.playerObject = EditorGUILayout.ObjectField(new GUIContent("Player object", "The gameobject will be used for animations and directional rotation if enabled."), controller.playerObject, typeof(Transform), true) as Transform;
+            controller.playerObject = EditorGUILayout.ObjectField(new GUIContent("Player object", "The GameObject will be used for animations and directional rotation if enabled."), controller.playerObject, typeof(Transform), true) as Transform;
             controller.playerCamera = EditorGUILayout.ObjectField(new GUIContent("Player camera", "A reference to the players camera. This must be a Cinemachine camera."), controller.playerCamera, typeof(CinemachineVirtualCamera), true) as CinemachineVirtualCamera;
+            controller.rb = EditorGUILayout.ObjectField(new GUIContent("Rigidbody", "A reference to the players Rigidbody."), controller.rb, typeof(Rigidbody), true) as Rigidbody;
+            controller.stepCollider = EditorGUILayout.ObjectField(new GUIContent("Step collider", "A reference to the capsule collider used for detecting stepping."), controller.stepCollider, typeof(CapsuleCollider), true) as CapsuleCollider;
 
             EditorGUILayout.Space(20);
         }

@@ -7,6 +7,7 @@ using TMPro.EditorUtilities;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.PlayerLoop;
@@ -47,15 +48,18 @@ public class CharacterController : MonoBehaviour
     float moveSpeed = 5;
     public float acceleration = 40;
     public float playerDrag = 10;
-    public float maxSlopeAngle;//
     public float maxStepHeight = 0.5f;
     public float stepSmoothingSpeed = 10;
+    public float maxSlopeAngle = 80;
     public bool smoothStep = true;
     float playerHeight;
     public float walkingHeight = 1.8f;
     public float crouchingHeight = 0.9f;
-    public bool dynamicCrouch;//
+    public float crouchSpeed = 5;
+    public bool dynamicCrouch;
     public float dynamicCrouchOffset = 0.1f;
+    float maxUncrouchDistance;
+    bool canUncrouch;
     RaycastHit stepRay;
 
 
@@ -72,7 +76,17 @@ public class CharacterController : MonoBehaviour
     float jumpBufferTime;
     bool withinCoyoteTime;
     bool performJump = false;
+    bool jumping;
 
+    //Gravity variables
+    float gravity = 9.81f;
+    private float timeFell;
+    public float timeSinceFall = 0;
+    bool landed;
+    public Vector3 gravityDirection;
+    public Transform attractor;
+    public float dynamicGravityLimit = 100;
+    public float gravityChangeSpeed = 10;
 
     //Ground check variables
     public float groundCheckOffset = 0.15f;
@@ -83,20 +97,10 @@ public class CharacterController : MonoBehaviour
     public LayerMask groundLayer;
     public LayerMask dynamicGravityLayer;
 
-    //Gravity variables
-    float gravity = 9.81f;
-    private float timeFell;
-    public float timeSinceFall = 0;
-    bool landed;
-    public Vector3 gravityDirection;
-    public Transform attractor;
-    [Range(0,100)]public float gravityChangeSpeed = .1f;
-    public float maxGravityChange;
-
     //Audio variables
     public AudioSource aSource;
     public float walkStepTime = 0.5f;
-    float stepTime = 0.5f;
+    float stepTime;
     public bool enableDefaultSounds;
     [SerializeField] public List<AudioSettings> footstepAudioClips;
     [SerializeField] public List<AudioSettings> jumpingAudioClips;
@@ -104,10 +108,11 @@ public class CharacterController : MonoBehaviour
 
 
     //Object assignment
+    public Transform playerObject;
+    Animator animator;
+    public CinemachineVirtualCamera playerCamera;
     public CapsuleCollider stepCollider;
     public Rigidbody rb;
-    public Transform playerObject;
-    public CinemachineVirtualCamera playerCamera;
 
     //Input variables
     PlayerInput pi;
@@ -132,15 +137,9 @@ public class CharacterController : MonoBehaviour
     public Vector3 cachedSlopeAngle;
     public bool overideGravity;
     float jumpHoldTime;
-    Animator animator;
-
     public Matrix4x4 predictiveOrientation;
-    bool jumping;
-    public float maxUncrouchDistance;
-    bool canUncrouch;
-
     Vector3 floorPos;
-    
+
     //Called on script load
     private void Awake() {
         //Get references to GameObjects 
@@ -152,6 +151,7 @@ public class CharacterController : MonoBehaviour
         //Set default values
         cameraStartingPos = playerCamera.transform.localPosition;
         predictiveOrientation.SetTRS(Vector3.zero, Quaternion.identity, Vector3.one);
+        stepTime = walkStepTime;
 
         //Set cursor lock mode
         Cursor.lockState = CursorLockMode.Locked;
@@ -209,10 +209,6 @@ public class CharacterController : MonoBehaviour
         jumping = true;
         grounded = false;
 
-        //Cancel out vertical velocity
-        //localVelocty = transform.InverseTransformDirection(rb.velocity);
-        //localVelocty = new Vector3(localVelocty.x, 0, localVelocty.z);
-
         //Apply velocity to player
         rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * (power -  playerHeight / 2));
 
@@ -244,7 +240,7 @@ public class CharacterController : MonoBehaviour
 
         //Convert world global velocity to relative velocity and remove vertical component
         Matrix4x4 limitTransform = Matrix4x4.identity;
-        limitTransform.SetTRS(Vector3.zero, Quaternion.LookRotation(transform.forward, Physics.gravity), Vector3.one);
+        if(cachedSlopeAngle.sqrMagnitude > 0) limitTransform.SetTRS(Vector3.zero, Quaternion.LookRotation(cachedSlopeAngle, Physics.gravity), Vector3.one);
         Vector3 convertedVelocity = limitTransform.inverse.MultiplyVector(rb.velocity);
         horizontalVelocity = new Vector3(convertedVelocity.x, 0, convertedVelocity.z);
         Vector3 limitedVal = horizontalVelocity.normalized * moveSpeed;
@@ -362,15 +358,15 @@ public class CharacterController : MonoBehaviour
             
             hitAngle = Vector3.Angle(gcHit.normal, transform.up);
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
-    
+        
             //Checks if the player is standing on something that has dynamic gravity
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform")) {
                 slopeAngle = moveDirection;
                 SetGravityDirection(gravity, gcHit.normal, true);
             }
-
+        
             //Checks if the player is standing on a slope 
-            else if (grounded) {
+            else if (grounded && hitAngle < maxSlopeAngle) {
                 slopeAngle = Vector3.ProjectOnPlane(moveDirection, gcHit.normal).normalized;
                 SetGravityDirection(gravity, gcHit.normal, false);
             }
@@ -384,7 +380,7 @@ public class CharacterController : MonoBehaviour
             GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Angle :  " + hitAngle;
 
             //Checks if the player is standing on something that has dynamic gravity
-            if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= maxGravityChange)) {
+            if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= dynamicGravityLimit)) {
                 slopeAngle = moveDirection; 
                 SetGravityDirection(gravity, gcHit.normal, true);        
             }
@@ -448,24 +444,33 @@ public class CharacterController : MonoBehaviour
         }
     }
 
+    //Sets the height of the player and the size of the main collider
     private void SetHeight() {
         stepCollider.height = playerHeight - maxStepHeight ;
         stepCollider.center = new Vector3(0, (playerHeight - maxStepHeight) / 2 + maxStepHeight, 0);
 
     }
 
-    private void GetMaxUnCrouchDistance() {
+    //Checks if the extent that the player is able to uncrouch
+    private void GetCrouchLimits() {
         RaycastHit unCrouchHit;
-        Debug.DrawRay(floorPos + transform.up * 1, transform.up * 1, Color.red);
 
-        if (Physics.Raycast(floorPos + (transform.up * crouchingHeight), transform.up, out unCrouchHit, walkingHeight, groundLayer)) {
-            maxUncrouchDistance = Mathf.Lerp(maxUncrouchDistance, unCrouchHit.distance, stepSmoothingSpeed * Time.deltaTime);
-            playerHeight = Mathf.Clamp(playerHeight, crouchingHeight, maxUncrouchDistance - dynamicCrouchOffset + crouchingHeight);
+        //Checks if there is something blocking the player from uncrouching
+        if (Physics.BoxCast(floorPos + (transform.up * groundCheckOffset), new Vector3(groundCheckSize, groundCheckSize, groundCheckSize), transform.up, out unCrouchHit, Quaternion.identity, walkingHeight, groundLayer)) {
+            maxUncrouchDistance = unCrouchHit.distance + groundCheckSize;//Mathf.Lerp(maxUncrouchDistance, unCrouchHit.distance, stepSmoothingSpeed * Time.deltaTime);
             canUncrouch = false;
         }
         else {
             maxUncrouchDistance = walkingHeight;
             canUncrouch = true;
+        }
+
+        //Sets the clamped player height
+        if (dynamicCrouch) {
+            playerHeight = Mathf.Lerp(playerHeight, Mathf.Clamp(crouching ? crouchingHeight : walkingHeight, crouchingHeight, maxUncrouchDistance - dynamicCrouchOffset + groundCheckOffset), crouchSpeed * Time.deltaTime);
+        }
+        else {
+            playerHeight = Mathf.Lerp(playerHeight, !crouching && canUncrouch ? walkingHeight : crouchingHeight, crouchSpeed * Time.deltaTime);
         }
 
         SetHeight();
@@ -504,10 +509,6 @@ public class CharacterController : MonoBehaviour
         else if (crouching) moveSpeed = walkCrouchSpeed;
         else moveSpeed = walkSpeed;
 
-        //Set player height
-        //playerHeight = !crouching && canUncrouch? walkingHeight : crouchingHeight;
-        playerHeight = crouching ? crouchingHeight : walkingHeight;
-
         //Gets axis inputs from the player
         mousePosition = pi.actions.FindAction("Look").ReadValue<Vector2>() * lookSpeed; //Mouse inputs
         mousePosition.y = Mathf.Clamp(mousePosition.y, cameraAngleLimits.x, cameraAngleLimits.y);
@@ -535,8 +536,8 @@ public class CharacterController : MonoBehaviour
         GroundChecks();
 
         //Handels crouching 
-        GetMaxUnCrouchDistance();
-
+        GetCrouchLimits();
+        
         //moveSpeed = grounded ? 0 : moveSpeed; // temp code, change for more robust 
 
         //Makes sure the player does not exceed a certain speed
@@ -583,8 +584,7 @@ public class CharacterController : MonoBehaviour
 
     //Called every fixed framerate frame
     private void FixedUpdate() {
-        //if (transform.parent != null) predictiveOrientation.SetTRS(floorPos, Quaternion.Inverse(transform.parent.rotation) * predictiveOrientation.rotation, Vector3.one);
-
+        //Moves the player 
         MovePlayer();
 
         if (jumpMode == jumpModes.Hold && pi.actions.FindAction("Jump").IsPressed()) ExecuteJump(jumpHeight * (Time.time - jumpHoldTime));
@@ -594,12 +594,9 @@ public class CharacterController : MonoBehaviour
     private void DebugMode() {
         //Debug text 
         //GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Parent delta rotation :  " + maxUncrouchDistance;
-        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Vertical speed : " + localVelocty.y.ToString("F2");
+        GameObject.Find("Debug2").GetComponent<TMP_Text>().text = "Can uncrouch : " + canUncrouch;
         GameObject.Find("Debug3").GetComponent<TMP_Text>().text = "Grounded : " + grounded;
         GameObject.Find("Debug4").GetComponent<TMP_Text>().text = "Speed " + rb.velocity.magnitude.ToString("F2");
-
-
-
     }
 
     private void OnDrawGizmos() {
