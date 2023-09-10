@@ -15,9 +15,9 @@ public class RootMotionHandeler : MonoBehaviour
 
     private void OnAnimatorMove() {
         if (rootMotionEnabled) {
-            Vector3 slope = transform.parent.GetComponentInParent<CharacterController>().gcHit.normal;
+            //Vector3 slope = transform.parent.GetComponentInParent<CharacterController>().gcHit.normal;
 
-            transform.parent.transform.position += Vector3.ProjectOnPlane(animator.deltaPosition, slope);
+            transform.parent.transform.position += Vector3.ProjectOnPlane(animator.deltaPosition, Physics.gravity);
 
 
         }

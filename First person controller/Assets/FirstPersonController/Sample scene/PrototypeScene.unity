@@ -5161,7 +5161,7 @@ Transform:
   m_GameObject: {fileID: 1823688464}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.545, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6212,7 +6212,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 90.00013
+  field of view: 90.0016
   orthographic: 0
   orthographic size: 10
   m_Depth: 0
@@ -7602,7 +7602,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   cameraFOVAdjustSpeed: 0.1
   cameraOffset: 0
-  cameraArmLenght: 2
+  cameraArmLength: 2
   useHeadBobCurves: 0
   headBobFrequency: 0
   headBobAmplitude: 0
@@ -7625,6 +7625,7 @@ MonoBehaviour:
   sprintSpeed: 5
   walkCrouchSpeed: 1
   sprintCrouchSpeed: 1.5
+  disableMovementWhenGrounded: 0
   acceleration: 40
   playerDrag: 10
   maxStepHeight: 0.33
@@ -7957,6 +7958,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 5080440203501033984, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
+        type: 3}
+      propertyPath: m_Lens.FieldOfView
+      value: 90.0016
+      objectReference: {fileID: 0}
     - target: {fileID: 5147027824117060209, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -8006,6 +8012,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5241303648997708079, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
+        type: 3}
+      propertyPath: cameraArmLenght
+      value: 2.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5241303648997708079, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
+        type: 3}
+      propertyPath: enableDefaultSounds
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5241303648997708079, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
+        type: 3}
+      propertyPath: disableMovmentWhenGrounded
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5241303648997708079, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
+        type: 3}
+      propertyPath: disableMovementWhenGrounded
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6621628156211756551, guid: 722d3e6dac6cccc4bb76b2ecf668ff0c,
         type: 3}

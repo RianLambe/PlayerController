@@ -961,7 +961,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5147027824117060209
 Transform:
   m_ObjectHideFlags: 0
@@ -1029,9 +1029,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.3
-  m_Height: -0.5
+  m_Height: 1.3
   m_Direction: 1
-  m_Center: {x: 0, y: 0.25, z: 0}
+  m_Center: {x: 0, y: 1.15, z: 0}
 --- !u!114 &5241303648997708079
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1081,7 +1081,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   cameraFOVAdjustSpeed: 0.1
   cameraOffset: 0.2
-  cameraArmLenght: 0
+  cameraArmLength: 2
   useHeadBobCurves: 1
   headBobFrequency: 0.75
   headBobAmplitude: 0.04
@@ -1158,6 +1158,7 @@ MonoBehaviour:
   sprintSpeed: 5
   walkCrouchSpeed: 1
   sprintCrouchSpeed: 2.5
+  disableMovementWhenGrounded: 1
   acceleration: 40
   playerDrag: 10
   maxStepHeight: 0.5
@@ -1274,7 +1275,6 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 0
-  maxUncrouchDistance: 0
 --- !u!114 &7815354085751546171
 MonoBehaviour:
   m_ObjectHideFlags: 0
