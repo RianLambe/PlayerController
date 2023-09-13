@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using TMPro;
 using TMPro.EditorUtilities;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
@@ -227,10 +228,7 @@ public class CharacterController : MonoBehaviour
             performJump = false;
 
             if (jumpMode == jumpModes.Charge) {
-                //if (numberOfJumps < maxJumps) ExecuteJump(jumpHeight * chargeCurve.Evaluate(jumpHoldTime));
-
                 if (playerObject != null) playerObject.GetComponent<Animator>().SetBool("chargingJump", false);
-                Debug.Log(Time.time - jumpHoldTime);
                 ExecuteJump(chargeCurve.Evaluate(Time.time - jumpHoldTime));
             }
         }
@@ -242,9 +240,10 @@ public class CharacterController : MonoBehaviour
         landed = false;
         jumping = true;
         grounded = false;
+        attemptStep = false;
 
         //Apply velocity to player
-        rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * (power -  playerHeight / 2));
+        rb.velocity = transform.up * Mathf.Sqrt(2.0f * gravity * (power));
 
         //SetGravityDirection(gravity, transform.up, false);
         numberOfJumps++;
@@ -293,8 +292,6 @@ public class CharacterController : MonoBehaviour
             hitLayer = LayerMask.LayerToName(gcHit.transform.gameObject.layer);
             hitAngle = Vector3.Angle(gcHit.normal, predictiveOrientation * Vector3.up);
 
-            GameObject.Find("Debug1").GetComponent<TMP_Text>().text = "Angle :  " + hitAngle;
-
             //Checks if the player is standing on something that has dynamic gravity
             if ((hitLayer == "Dynamic gravity" || hitLayer == "Dynamic gravity + Moving platform") && (hitAngle <= dynamicGravityLimit)) {
                 slopeAngle = moveDirection; 
@@ -340,21 +337,24 @@ public class CharacterController : MonoBehaviour
 
     //Checks if the player is able to step up on something
     private void StepCheck() {
-        if (Physics.BoxCast(transform.position + (transform.up * playerHeight), new Vector3(groundCheckSize, groundCheckSize, groundCheckSize), -transform.up, out stepRay, Quaternion.identity, playerHeight + maxStepHeight, groundLayer)) {
+
+        float checkDistance = attemptStep ? playerHeight + maxStepHeight - groundCheckSize : playerHeight - groundCheckSize;
+        if (Physics.BoxCast(transform.position + (transform.up * playerHeight), new Vector3(groundCheckSize, groundCheckSize, groundCheckSize), -transform.up, out stepRay, Quaternion.identity, checkDistance, groundLayer)) {
             if (!jumping) {
                 floorPos = transform.position + (transform.up * playerHeight) - transform.up * (stepRay.distance + groundCheckSize);
-
+    
                 //Move the player and the camera to the new step height position
-                //transform.position = Vector3.Lerp(transform.position, floorPos, smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
+                transform.position = Vector3.Lerp(transform.position, floorPos, smoothStep ? stepSmoothingSpeed * Time.deltaTime : 1);
                 cameraStartingPos = Vector3.Lerp(cameraStartingPos, new Vector3(0, playerHeight - cameraOffset, 0), stepSmoothingSpeed * Time.deltaTime);
-
+    
                 string stepLayer = LayerMask.LayerToName(stepRay.transform.gameObject.layer);
                 transform.SetParent(stepLayer == "Moving platform" || stepLayer == "Dynamic gravity + Moving platform" ? stepRay.transform : null, true);
+                attemptStep = true;
             }
             grounded = true;
         }
         else {
-            attemptStep = true;
+            attemptStep = false;
             grounded = false;
             floorPos = transform.position - transform.up * (playerHeight / 2);
             transform.SetParent(null);
@@ -380,7 +380,7 @@ public class CharacterController : MonoBehaviour
 
         //Checks if there is something blocking the player from uncrouching
         if (Physics.BoxCast(floorPos + (transform.up * groundCheckOffset), new Vector3(groundCheckSize, groundCheckSize, groundCheckSize), transform.up, out unCrouchHit, Quaternion.identity, walkingHeight, groundLayer)) {
-            maxUncrouchDistance = unCrouchHit.distance + groundCheckSize;//Mathf.Lerp(maxUncrouchDistance, unCrouchHit.distance, stepSmoothingSpeed * Time.deltaTime);
+            maxUncrouchDistance = unCrouchHit.distance + groundCheckSize;
             canUncrouch = false;
         }
         else {
@@ -580,8 +580,6 @@ public class CharacterController : MonoBehaviour
 
         //Handles playing all the footstep sounds
         FootstepSounds();
-
-        Debug.Log(grounded);
     }
 
     //Called every fixed framerate frame
