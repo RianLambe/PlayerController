@@ -1,0 +1,66 @@
+{
+    "name": "Examples",
+    "maps": [
+        {
+            "name": "Example action map",
+            "id": "b708012e-d032-4716-89c0-82316da988f4",
+            "actions": [
+                {
+                    "name": "ChangeCharacter",
+                    "type": "Button",
+                    "id": "a79d5adc-8347-4567-8c09-ae0967f803dd",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Planet",
+                    "type": "Button",
+                    "id": "a69faa28-4edf-4588-b756-e14a80821837",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "2056e655-b37a-4827-bb8c-19d9da95753b",
+                    "path": "<Keyboard>/y",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ChangeCharacter",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5a19126e-364c-4a1b-801d-514c7b3a4fc3",
+                    "path": "<Keyboard>/g",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Examples control scheme",
+                    "action": "Planet",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        {
+            "name": "Examples control scheme",
+            "bindingGroup": "Examples control scheme",
+            "devices": [
+                {
+                    "devicePath": "<Keyboard>",
+                    "isOptional": false,
+                    "isOR": false
+                }
+            ]
+        }
+    ]
+}
