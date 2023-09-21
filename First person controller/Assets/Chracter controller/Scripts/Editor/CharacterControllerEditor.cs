@@ -253,14 +253,14 @@ public class CharacterControllerEditor : Editor
             EditorGUILayout.LabelField("General audio settings", catagoryStyle);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(autoFootstepSounds, new GUIContent("Auto footstep sounds", "If enabled the sound manager will atempt to play a footstep sound every x seconds when walking. If you would instead like to control sounds using animation events leave this setting disabled."));
+            EditorGUILayout.PropertyField(autoFootstepSounds, new GUIContent("Auto footstep sounds", "If enabled the sound manager will attempt to play a footstep sound every x seconds when walking. If you would instead like to control sounds using animation events leave this setting disabled."));
             if (controller.autoFootstepSounds) {
                 controller.walkStepTime = EditorGUILayout.FloatField(new GUIContent("Walk step time", "The amount of time between each sound footstep at walking speed. The frequency on the footsteps will increase as the player's speed increases."), controller.walkStepTime);
             }
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.PropertyField(autoJumpSounds, new GUIContent("Auto jump sounds", "If enabled the sound manager will atempt to play a jump sound when jumping. If you would instead like to control sounds using animation events leave this setting disabled."));
-            EditorGUILayout.PropertyField(autoLandSounds, new GUIContent("Auto land sounds", "If enabled the sound manager will atempt to play a footstep landing sound when the player hits the ground. If you would instead like to control sounds using animation events leave this setting disabled."));
+            EditorGUILayout.PropertyField(autoJumpSounds, new GUIContent("Auto jump sounds", "If enabled the sound manager will attempt to play a jump sound when jumping. If you would instead like to control sounds using animation events leave this setting disabled."));
+            EditorGUILayout.PropertyField(autoLandSounds, new GUIContent("Auto land sounds", "If enabled the sound manager will attempt to play a footstep landing sound when the player hits the ground. If you would instead like to control sounds using animation events leave this setting disabled."));
 
             EditorGUILayout.Space(15);
 

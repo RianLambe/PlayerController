@@ -346,7 +346,7 @@ MonoBehaviour:
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 0}
   m_Lens:
-    FieldOfView: 90.00003
+    FieldOfView: 90.00037
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -611,6 +611,7 @@ MonoBehaviour:
   jumpBufferMode: 2
   maxJumpBuffer: 10
   timeSinceFall: 0
+  landed: 0
   gravityDirection: {x: 0, y: 0, z: 0}
   attractor: {fileID: 0}
   dynamicGravityLimit: 100
@@ -799,7 +800,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0

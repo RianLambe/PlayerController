@@ -1,6 +1,7 @@
 using Cinemachine;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using TMPro;
 using Unity.Mathematics;
 using Unity.VisualScripting;
@@ -87,7 +88,7 @@ public class CompleteCharacterController : MonoBehaviour
     float gravity = 9.81f;
     private float timeFell;
     public float timeSinceFall = 0;
-    bool landed;
+    public bool landed;
     public Vector3 gravityDirection;
     public Transform attractor;
     public float dynamicGravityLimit = 100;
@@ -142,7 +143,7 @@ public class CompleteCharacterController : MonoBehaviour
     Matrix4x4 predictiveOrientation;
     Vector3 floorPos;
     bool attemptStep;
-    bool debugMode = true;
+    bool debugMode = false;
 
     //Called on script load
     private void Awake() {
@@ -238,7 +239,7 @@ public class CompleteCharacterController : MonoBehaviour
     //Performs the jump with the calculated power
     void ExecuteJump(float power) {
         timeSinceFall = Time.time;
-        landed = false;
+        //landed = false;
         jumping = true;
         grounded = false;
         attemptStep = false;
@@ -249,7 +250,7 @@ public class CompleteCharacterController : MonoBehaviour
         //SetGravityDirection(gravity, transform.up, false);
         numberOfJumps++;
 
-        if(autoJumpSounds) PlaySounds(jumpingAudioClips);
+        //if(autoJumpSounds) PlaySounds(jumpingAudioClips);
     }
 
     //Checks to see if the player is grounded as well as the angle of the ground
@@ -514,16 +515,17 @@ public class CompleteCharacterController : MonoBehaviour
 
     //Plays a random sound effect from a list of audio clips
     public void PlaySounds(List<AudioSettings> clips) {
-        RaycastHit hit;
-        if (Physics.Raycast(floorPos + (transform.up * groundCheckOffset), -(predictiveOrientation * Vector3.up), out hit, 2, groundLayer)) {
-            foreach (AudioSettings soundClip in clips) {
-                if (hit.transform.tag == soundClip.tag) {
-                    aSource.PlayOneShot(soundClip.sounds[Random.Range(0, soundClip.sounds.Count)]);
-                    return;
-                }
+        if (grounded == false) return;
+
+        Debug.Log("test");
+
+        foreach (AudioSettings soundClip in clips) {
+            if (stepRay.transform.tag == soundClip.tag) {
+                aSource.PlayOneShot(soundClip.sounds[Random.Range(0, soundClip.sounds.Count)]);
+                return;
             }
-            if (enableDefaultSounds && clips.Count > 0) aSource.PlayOneShot(clips[0].sounds[Random.Range(0, clips[0].sounds.Count)]);
         }
+        if (enableDefaultSounds && clips.Count > 0) aSource.PlayOneShot(clips[0].sounds[Random.Range(0, clips[0].sounds.Count)]);
     }
 
     //Moves the player along the desired plane
