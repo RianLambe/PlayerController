@@ -1,4 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-**/PlayerController/*.vb linguist-generated
+*.shaderlab linguist-detectable=false 
