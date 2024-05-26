@@ -2,3 +2,4 @@
 * text=auto
 
 *.shaderlab linguist-detectable=false 
+*.cs linguist-detectable=false 
